@@ -99,8 +99,9 @@ func ModularInverse(a, p string) (string, error) {
 
 	// Check if p is prime; if not, the multiplicative inverse might not exist
 	// https://pkg.go.dev/math/big#Int.ProbablyPrime
-	// The probability of returning true for a randomly chosen non-prime is at most ¼ⁿ.
+	// From ---^ that site: "The probability of returning true for a randomly chosen non-prime is at most ¼ⁿ"
 	// i.e. (1/4)^n - where n is the parameter handed in to the function
+	// TODO: work out if there's a way to decide what that param should be set to
 	if !pInt.ProbablyPrime(100) {
 		return "", fmt.Errorf("invalid input: modulus %s is not prime", p)
 	}

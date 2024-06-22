@@ -9,10 +9,16 @@ help:	## Show this help
 build-bigmath:	## Build bigmath executable
 	@echo "Building bigmath executable..."
 	go build -o bin/bigmath ./cmd/bigmath
-	@echo "Build complete."
+	@echo "Build of bigmath complete."
+
+.PHONY: build-finitefield
+build-finitefield:	## Build finitefield executable
+	@echo "Building finitefield executable..."
+	go build -o bin/finitefield ./cmd/finitefield
+	@echo "Build of finitefield complete."
 
 .PHONY: build-all
-build-all: build-bigmath	## Build the project - all necessary components
+build-all: build-bigmath build-finitefield	## Build the project - all necessary components
 
 .PHONY: run-bigmath
 run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
@@ -22,7 +28,17 @@ run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - 
 	@echo "************************************************************"
 	@echo
 	./bin/bigmath
-	@echo "Run complete."
+	@echo "Run of bigmath complete."
+
+.PHONY: run-finitefield
+run-finitefield: build-finitefield test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
+	@echo
+	@echo "****************************************************************"
+	@echo "✓✓✓✓✓ -- Finitefield built, and tested - continuing on to run..."
+	@echo "****************************************************************"
+	@echo
+	./bin/finitefield
+	@echo "Run of finitefield complete."
 
 .PHONY: test
 test:	## Run unit tests for all packages under pkg
@@ -38,7 +54,7 @@ clean:	## Remove binaries and any temporary files
 	@echo "Clean complete."
 
 .PHONY: test-drive
-test-drive: help build-bigmath build-all run-bigmath test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+test-drive: help build-bigmath build-finitefield build-all run-bigmath test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
