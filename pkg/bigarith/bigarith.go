@@ -13,7 +13,7 @@ func Add(a, b string) (string, error) {
 	_, okX := x.SetString(a, 10)
 	_, okY := y.SetString(b, 10)
 	if !okX || !okY {
-		return "", fmt.Errorf("invalid input: a = %s, b = %s", a, b)
+		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
 
 	result := new(big.Int).Add(x, y)
@@ -29,7 +29,7 @@ func Subtract(a, b string) (string, error) {
 	_, okX := x.SetString(a, 10)
 	_, okY := y.SetString(b, 10)
 	if !okX || !okY {
-		return "", fmt.Errorf("invalid input: a = %s, b = %s", a, b)
+		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
 
 	result := new(big.Int).Sub(x, y)
@@ -45,7 +45,7 @@ func Multiply(a, b string) (string, error) {
 	_, okX := x.SetString(a, 10)
 	_, okY := y.SetString(b, 10)
 	if !okX || !okY {
-		return "", fmt.Errorf("invalid input: a = %s, b = %s", a, b)
+		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
 
 	result := new(big.Int).Mul(x, y)

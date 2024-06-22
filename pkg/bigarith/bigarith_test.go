@@ -75,30 +75,35 @@ func (suite *ArithTestSuite) TestSubtract() {
 // TestMultiply tests the multiplication of two numbers, including edge cases.
 func (suite *ArithTestSuite) TestMultiply() {
 	tests := []struct {
-		a, b   string
-		want   string
-		hasErr bool
+		a, b    string
+		want    string
+		wantErr string
+		hasErr  bool
 	}{
-		{"123456789", "987654321", "121932631112635269", false},
-		{"-123456789", "987654321", "-121932631112635269", false},
-		{"123456789", "-987654321", "-121932631112635269", false},
-		{"0", "123456789", "0", false},
-		{"123456789", "0", "0", false},
-		{"abc", "123", "", true},
+		{"123456789", "987654321", "121932631112635269", "", false},
+		{"-123456789", "987654321", "-121932631112635269", "", false},
+		{"123456789", "-987654321", "-121932631112635269", "", false},
+		{"0", "123456789", "0", "", false},
+		{"123456789", "0", "0", "", false},
+		{"abc", "123", "", "invalid input: a = abc, b = 123 - cannot create all the integers required, from this input", true},
 	}
 
 	for _, tt := range tests {
 		got, err := Multiply(tt.a, tt.b)
-		correctResult := ""
+		strResult := ""
+		strWant := ""
 		if tt.hasErr {
+			strResult = fmt.Sprintf("produces an error of '%s' (with a result of %s)", err, got)
+			strWant = fmt.Sprintf("error of '%s'", tt.wantErr)
 			assert.Error(suite.T(), err, "Multiply should return an error but did not")
-			correctResult = fmt.Sprintf("produces an error of %s", err)
+			assert.Equal(suite.T(), tt.wantErr, err.Error(), "Divide did not return expected error")
 		} else {
+			strResult = fmt.Sprintf("= %s", got)
+			strWant = tt.want
 			assert.NoError(suite.T(), err, "Multiply should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Multiply did not return expected result")
-			correctResult = fmt.Sprintf("= %s", got)
 		}
-		fmt.Printf("\tCONFIRMED: %s multiplied by %s %s\n", tt.a, tt.b, correctResult)
+		fmt.Printf("\tTEST & RESULT: %s multiplied by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 	}
 }
 
