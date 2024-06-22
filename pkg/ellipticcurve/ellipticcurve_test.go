@@ -1,16 +1,35 @@
 package ellipticcurve
 
 import (
+	"flag"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
+var verbose bool
+
 // EllipticCurveTestSuite defines a suite of tests for the EllipticCurve package
 type EllipticCurveTestSuite struct {
 	suite.Suite
+	Verbose bool
+}
+
+func TestMain(m *testing.M) {
+	// Define the verbose flag for testing.
+	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output for tests")
+	flag.Parse()
+
+	// Now run the tests.
+	os.Exit(m.Run())
+}
+
+// SetupTestSuite runs before the tests in the suite are executed.
+func (suite *EllipticCurveTestSuite) SetupTest() {
+	suite.Verbose = verbose // Use the global verbose flag
 }
 
 // TestNewEllipticCurve tests the creation of a new EllipticCurve.

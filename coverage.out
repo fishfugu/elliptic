@@ -38,7 +38,7 @@ elliptic/pkg/bigarith/bigarith.go:170.2,170.64 1 1
 elliptic/pkg/bigarith/bigarith.go:170.64,171.26 1 1
 elliptic/pkg/bigarith/bigarith.go:171.26,173.4 1 1
 elliptic/pkg/bigarith/bigarith.go:176.2,176.64 1 1
-elliptic/pkg/ellipticcurve/ellipticcurve.go:16.52,18.2 1 1
-elliptic/pkg/ellipticcurve/ellipticcurve.go:21.56,23.2 1 1
-elliptic/pkg/ellipticcurve/ellipticcurve.go:26.58,28.2 1 1
-elliptic/pkg/ellipticcurve/ellipticcurve.go:31.72,33.2 1 1
+elliptic/pkg/ellipticcurve/ellipticcurve.go:18.52,20.2 1 1
+elliptic/pkg/ellipticcurve/ellipticcurve.go:23.56,25.2 1 1
+elliptic/pkg/ellipticcurve/ellipticcurve.go:28.58,30.2 1 1
+elliptic/pkg/ellipticcurve/ellipticcurve.go:33.72,35.2 1 1

@@ -47,6 +47,14 @@ test-drive: help build-bigmath build-all run-bigmath test clean	## Run through a
 ## They either replicate other stuff or are just inappropriate for running without thinking about it
 
 .PHONY: test-quiet
-test-quiet:	## Run unit tests for all packages under pkg - but quietly
+test-quiet:	## Run unit tests for all packages under pkg - but quietly - quits at first error
 	go clean -testcache
 	go test -failfast ./pkg/...
+
+.PHONY: test-verbose
+test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
+# TODO: implement verbose mode more conistently
+	@echo "Running tests in verbose mode..."
+	go clean -testcache
+	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
+	go tool cover -html=coverage.out

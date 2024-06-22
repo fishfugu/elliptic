@@ -9,6 +9,8 @@ type EllipticCurve struct {
 
 // FiniteFieldEC represents an elliptic curve over a finite field defined by the equation y^2 = x^3 + Ax + B.
 type FiniteFieldEC struct {
+	// TODO: should this be definable by "strings" rather than big.Int?
+	// Woould that make it easier to interface with bigarith functions?
 	a, b, p *big.Int // Coefficients of the curve equation and prime modulus of the field.
 }
 

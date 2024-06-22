@@ -1,6 +1,7 @@
 package bigarith
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"testing"
@@ -9,10 +10,26 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var verbose bool
+
 // Define a suite for all arithmetic tests
 type ArithTestSuite struct {
 	suite.Suite
-	verbose bool
+	Verbose bool
+}
+
+func TestMain(m *testing.M) {
+	// Define the verbose flag for testing.
+	flag.BoolVar(&verbose, "verbose", false, "Enable verbose output for tests")
+	flag.Parse()
+
+	// Now run the tests.
+	os.Exit(m.Run())
+}
+
+// SetupTestSuite runs before the tests in the suite are executed.
+func (suite *ArithTestSuite) SetupTest() {
+	suite.Verbose = verbose // Use the global verbose flag
 }
 
 // TestAdd tests the addition of two large numbers, including edge cases.
@@ -45,7 +62,7 @@ func (suite *ArithTestSuite) TestAdd() {
 			assert.NoError(suite.T(), err, "Add should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Add did not return expected result")
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 		}
 	}
@@ -82,7 +99,7 @@ func (suite *ArithTestSuite) TestSubtract() {
 			assert.NoError(suite.T(), err, "Subtract should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Subtract did not return expected result")
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 		}
 	}
@@ -119,7 +136,7 @@ func (suite *ArithTestSuite) TestMultiply() {
 			assert.NoError(suite.T(), err, "Multiply should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Multiply did not return expected result")
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: %s multiplied by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 		}
 	}
@@ -151,7 +168,7 @@ func (suite *ArithTestSuite) TestDivide() {
 			assert.NoError(suite.T(), err, "Divide should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Divide did not return expected result")
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: %s divided by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 		}
 	}
@@ -187,7 +204,7 @@ func (suite *ArithTestSuite) TestDivideInField() {
 			assert.NoError(suite.T(), err, "DivideInField should not return an error")
 			assert.Equal(suite.T(), tt.want, got, fmt.Sprintf("DivideInField did not return expected result - %s divided by %s modulo %s returned %s but was expected to be %s\n", tt.a, tt.b, tt.p, got, tt.want))
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: %s divided by %s modulo %s %s (expected %s)\n", tt.a, tt.b, tt.p, strResult, strWant)
 		}
 	}
@@ -223,7 +240,7 @@ func (suite *ArithTestSuite) TestModularInverse() {
 			assert.NoError(suite.T(), err, "ModularInverse should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "ModularInverse did not return expected result")
 		}
-		if suite.verbose {
+		if suite.Verbose {
 			fmt.Printf("\tTEST & RESULT: Inverse of %s modulo %s %s (expected %s)\n", tt.a, tt.p, strResult, strWant)
 		}
 	}
@@ -325,15 +342,7 @@ func (suite *ArithTestSuite) TestFindPrime() {
 
 // SetupSuite is called before starting the suite and reads the environment variable for logging.
 func (suite *ArithTestSuite) SetupSuite() {
-	suite.verbose = false // Default to non-verbose logging
-	if v, ok := os.LookupEnv("LOG_VERBOSE"); ok && v == "true" {
-		suite.verbose = true
-	}
-}
-
-// SetupTestSuite runs before the tests in the suite are executed.
-func (suite *ArithTestSuite) SetupTest() {
-	// Initialize anything required for the test suite
+	// Set up before all tests run
 }
 
 // AfterTest runs after each test in the suite.
