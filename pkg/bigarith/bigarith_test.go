@@ -16,59 +16,69 @@ type ArithTestSuite struct {
 // TestAdd tests the addition of two large numbers, including edge cases.
 func (suite *ArithTestSuite) TestAdd() {
 	tests := []struct {
-		a, b   string
-		want   string
-		hasErr bool
+		a, b    string
+		want    string
+		wantErr string
+		hasErr  bool
 	}{
-		{"12345678901234567890", "98765432109876543210", "111111111011111111100", false},
-		{"-12345678901234567890", "12345678901234567890", "0", false},
-		{"12345678901234567890", "-98765432109876543210", "-86419753208641975320", false},
-		{"0", "0", "0", false},
-		{"123", "abc", "", true},
+		{"12345678901234567890", "98765432109876543210", "111111111011111111100", "", false},
+		{"-12345678901234567890", "12345678901234567890", "0", "", false},
+		{"12345678901234567890", "-98765432109876543210", "-86419753208641975320", "", false},
+		{"0", "0", "0", "", false},
+		{"123", "abc", "", "invalid input: a = 123, b = abc - cannot create all the integers required, from this input", true},
 	}
 
 	for _, tt := range tests {
 		got, err := Add(tt.a, tt.b)
-		correctResult := ""
+		strResult := ""
+		strWant := ""
 		if tt.hasErr {
+			strResult = fmt.Sprintf("produces an error of '%s' (with a result of %s)", err, got)
+			strWant = fmt.Sprintf("error of '%s'", tt.wantErr)
 			assert.Error(suite.T(), err, "Add should return an error but did not")
-			correctResult = fmt.Sprintf("produces an error of %s", err)
+			assert.Equal(suite.T(), tt.wantErr, err.Error(), "Add did not return expected error")
 		} else {
+			strResult = fmt.Sprintf("= %s", got)
+			strWant = tt.want
 			assert.NoError(suite.T(), err, "Add should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Add did not return expected result")
-			correctResult = fmt.Sprintf("= %s", got)
 		}
-		fmt.Printf("\tCONFIRMED: %s plus %s %s\n", tt.a, tt.b, correctResult)
+		fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 	}
 }
 
 // TestSubtract tests the subtraction of two numbers, including edge cases.
 func (suite *ArithTestSuite) TestSubtract() {
 	tests := []struct {
-		a, b   string
-		want   string
-		hasErr bool
+		a, b    string
+		want    string
+		wantErr string
+		hasErr  bool
 	}{
-		{"98765432109876543210", "12345678901234567890", "86419753208641975320", false},
-		{"12345678901234567890", "98765432109876543210", "-86419753208641975320", false},
-		{"-100", "100", "-200", false},
-		{"100", "-100", "200", false},
-		{"abc", "100", "", true},
-		{"100", "abc", "", true},
+		{"98765432109876543210", "12345678901234567890", "86419753208641975320", "", false},
+		{"12345678901234567890", "98765432109876543210", "-86419753208641975320", "", false},
+		{"-100", "100", "-200", "", false},
+		{"100", "-100", "200", "", false},
+		{"abc", "100", "", "invalid input: a = abc, b = 100 - cannot create all the integers required, from this input", true},
+		{"100", "abc", "", "invalid input: a = 100, b = abc - cannot create all the integers required, from this input", true},
 	}
 
 	for _, tt := range tests {
 		got, err := Subtract(tt.a, tt.b)
-		correctResult := ""
+		strResult := ""
+		strWant := ""
 		if tt.hasErr {
+			strResult = fmt.Sprintf("produces an error of '%s' (with a result of %s)", err, got)
+			strWant = fmt.Sprintf("error of '%s'", tt.wantErr)
 			assert.Error(suite.T(), err, "Subtract should return an error but did not")
-			correctResult = fmt.Sprintf("produces an error of %s", err)
+			assert.Equal(suite.T(), tt.wantErr, err.Error(), "Subtract did not return expected error")
 		} else {
+			strResult = fmt.Sprintf("= %s", got)
+			strWant = tt.want
 			assert.NoError(suite.T(), err, "Subtract should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Subtract did not return expected result")
-			correctResult = fmt.Sprintf("= %s", got)
 		}
-		fmt.Printf("\tCONFIRMED: %s minus %s %s\n", tt.a, tt.b, correctResult)
+		fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
 	}
 }
 
@@ -96,7 +106,7 @@ func (suite *ArithTestSuite) TestMultiply() {
 			strResult = fmt.Sprintf("produces an error of '%s' (with a result of %s)", err, got)
 			strWant = fmt.Sprintf("error of '%s'", tt.wantErr)
 			assert.Error(suite.T(), err, "Multiply should return an error but did not")
-			assert.Equal(suite.T(), tt.wantErr, err.Error(), "Divide did not return expected error")
+			assert.Equal(suite.T(), tt.wantErr, err.Error(), "Multiply did not return expected error")
 		} else {
 			strResult = fmt.Sprintf("= %s", got)
 			strWant = tt.want
