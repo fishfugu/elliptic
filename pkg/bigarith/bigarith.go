@@ -117,3 +117,61 @@ func Divide(a, b string) (string, error) {
 	return "", fmt.Errorf("division not implemented - due to ambiguous integer results")
 
 }
+
+// Cmp compares two integers represented as strings and returns:
+// -1 if a < b, 0 if a == b, 1 if a > b
+func Cmp(a, b string) (int, error) {
+	x, okX := new(big.Int).SetString(a, 10)
+	y, okY := new(big.Int).SetString(b, 10)
+	if !okX || !okY {
+		return 0, fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
+	}
+	return x.Cmp(y), nil
+}
+
+// Exp computes the exponentiation of base a to exp e modulo m.
+func Exp(b, e, m string) (string, error) {
+	base, okB := new(big.Int).SetString(b, 10)
+	exp, okE := new(big.Int).SetString(e, 10)
+	mod, okM := new(big.Int).SetString(m, 10)
+	if !okB || !okE || !okM {
+		return "", fmt.Errorf("invalid input: b = %s, e = %s, m = %s - cannot create all the integers required, from this input", b, e, m)
+	}
+	result := new(big.Int).Exp(base, exp, mod)
+	return result.String(), nil
+}
+
+// Mod performs the modulus operation of a by m.
+func Mod(a, m string) (string, error) {
+	x, okX := new(big.Int).SetString(a, 10)
+	mod, okM := new(big.Int).SetString(m, 10)
+	if !okX || !okM {
+		return "", fmt.Errorf("invalid input: a = %s, m = %s - cannot create all the integers required, from this input", a, m)
+	}
+	result := new(big.Int).Mod(x, mod)
+	return result.String(), nil
+}
+
+// FindPrime finds a prime number within the range specified by the strings low and high.
+// Returns the first prime found as a string, or an error if no prime is found or inputs are invalid.
+func FindPrime(low, high string) (string, error) {
+	// TODO: is there any reason to implement different way / direction of search?
+	// NOTE: currently from low bound, up
+	lowInt, ok := new(big.Int).SetString(low, 10)
+	if !ok {
+		return "", fmt.Errorf("invalid input for lower bound")
+	}
+	highInt, ok := new(big.Int).SetString(high, 10)
+	if !ok {
+		return "", fmt.Errorf("invalid input for upper bound")
+	}
+
+	// Start searching for a prime at the low end of the range
+	for p := lowInt; p.Cmp(highInt) <= 0; p.Add(p, big.NewInt(1)) {
+		if p.ProbablyPrime(20) { // 20 iterations of Miller-Rabin, quite strong
+			return p.String(), nil
+		}
+	}
+
+	return "", fmt.Errorf("no prime found in the specified range")
+}

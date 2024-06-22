@@ -2,6 +2,7 @@ package bigarith
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +12,7 @@ import (
 // Define a suite for all arithmetic tests
 type ArithTestSuite struct {
 	suite.Suite
+	verbose bool
 }
 
 // TestAdd tests the addition of two large numbers, including edge cases.
@@ -43,7 +45,9 @@ func (suite *ArithTestSuite) TestAdd() {
 			assert.NoError(suite.T(), err, "Add should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Add did not return expected result")
 		}
-		fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		}
 	}
 }
 
@@ -78,7 +82,9 @@ func (suite *ArithTestSuite) TestSubtract() {
 			assert.NoError(suite.T(), err, "Subtract should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Subtract did not return expected result")
 		}
-		fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: %s minus %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		}
 	}
 }
 
@@ -113,7 +119,9 @@ func (suite *ArithTestSuite) TestMultiply() {
 			assert.NoError(suite.T(), err, "Multiply should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Multiply did not return expected result")
 		}
-		fmt.Printf("\tTEST & RESULT: %s multiplied by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: %s multiplied by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		}
 	}
 }
 
@@ -143,7 +151,9 @@ func (suite *ArithTestSuite) TestDivide() {
 			assert.NoError(suite.T(), err, "Divide should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "Divide did not return expected result")
 		}
-		fmt.Printf("\tTEST & RESULT: %s divided by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: %s divided by %s %s (expected %s)\n", tt.a, tt.b, strResult, strWant)
+		}
 	}
 }
 
@@ -177,7 +187,9 @@ func (suite *ArithTestSuite) TestDivideInField() {
 			assert.NoError(suite.T(), err, "DivideInField should not return an error")
 			assert.Equal(suite.T(), tt.want, got, fmt.Sprintf("DivideInField did not return expected result - %s divided by %s modulo %s returned %s but was expected to be %s\n", tt.a, tt.b, tt.p, got, tt.want))
 		}
-		fmt.Printf("\tTEST & RESULT: %s divided by %s modulo %s %s (expected %s)\n", tt.a, tt.b, tt.p, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: %s divided by %s modulo %s %s (expected %s)\n", tt.a, tt.b, tt.p, strResult, strWant)
+		}
 	}
 }
 
@@ -211,7 +223,111 @@ func (suite *ArithTestSuite) TestModularInverse() {
 			assert.NoError(suite.T(), err, "ModularInverse should not return an error")
 			assert.Equal(suite.T(), tt.want, got, "ModularInverse did not return expected result")
 		}
-		fmt.Printf("\tTEST & RESULT: Inverse of %s modulo %s %s (expected %s)\n", tt.a, tt.p, strResult, strWant)
+		if suite.verbose {
+			fmt.Printf("\tTEST & RESULT: Inverse of %s modulo %s %s (expected %s)\n", tt.a, tt.p, strResult, strWant)
+		}
+	}
+}
+
+// TestCmp tests the comparison of two integers.
+func (suite *ArithTestSuite) TestCmp() {
+	tests := []struct {
+		a, b    string
+		want    int
+		wantErr bool
+	}{
+		{"10", "20", -1, false},
+		{"20", "10", 1, false},
+		{"15", "15", 0, false},
+		{"abc", "123", 0, true},
+	}
+
+	for _, tt := range tests {
+		result, err := Cmp(tt.a, tt.b)
+		if tt.wantErr {
+			assert.Error(suite.T(), err, "Cmp should return an error")
+		} else {
+			assert.NoError(suite.T(), err, "Cmp should not return an error")
+			assert.Equal(suite.T(), tt.want, result, "Cmp returned unexpected result")
+		}
+	}
+}
+
+// TestExp tests the exponentiation of a number.
+func (suite *ArithTestSuite) TestExp() {
+	tests := []struct {
+		base, exp, mod string
+		want           string
+		wantErr        bool
+	}{
+		{"2", "3", "5", "3", false},
+		{"10", "100", "13", "3", false},
+		{"10", "abc", "100", "", true},
+	}
+
+	for _, tt := range tests {
+		result, err := Exp(tt.base, tt.exp, tt.mod)
+		if tt.wantErr {
+			assert.Error(suite.T(), err, "Exp should return an error")
+		} else {
+			assert.NoError(suite.T(), err, "Exp should not return an error")
+			assert.Equal(suite.T(), tt.want, result, "Exp returned unexpected result")
+		}
+	}
+}
+
+// TestMod tests the modulus operation of two numbers.
+func (suite *ArithTestSuite) TestMod() {
+	tests := []struct {
+		a, m    string
+		want    string
+		wantErr bool
+	}{
+		{"10", "3", "1", false},
+		{"26", "5", "1", false},
+		{"abc", "5", "", true},
+	}
+
+	for _, tt := range tests {
+		result, err := Mod(tt.a, tt.m)
+		if tt.wantErr {
+			assert.Error(suite.T(), err, "Mod should return an error")
+		} else {
+			assert.NoError(suite.T(), err, "Mod should not return an error")
+			assert.Equal(suite.T(), tt.want, result, "Mod returned unexpected result")
+		}
+	}
+}
+
+// TestFindPrime tests finding a prime number within a range.
+func (suite *ArithTestSuite) TestFindPrime() {
+	tests := []struct {
+		low, high string
+		want      string
+		wantErr   bool
+	}{
+		{"100", "200", "101", false},        // Assuming 101 is the first prime in the range
+		{"100", "100", "", true},            // No primes possible in this range
+		{"two", "3", "", true},              // Invalid inputs
+		{"100", "hudred and one", "", true}, // Invalid inputs
+	}
+
+	for _, tt := range tests {
+		result, err := FindPrime(tt.low, tt.high)
+		if tt.wantErr {
+			assert.Error(suite.T(), err, "FindPrime should return an error")
+		} else {
+			assert.NoError(suite.T(), err, "FindPrime should not return an error")
+			assert.Equal(suite.T(), tt.want, result, "FindPrime returned unexpected result")
+		}
+	}
+}
+
+// SetupSuite is called before starting the suite and reads the environment variable for logging.
+func (suite *ArithTestSuite) SetupSuite() {
+	suite.verbose = false // Default to non-verbose logging
+	if v, ok := os.LookupEnv("LOG_VERBOSE"); ok && v == "true" {
+		suite.verbose = true
 	}
 }
 
