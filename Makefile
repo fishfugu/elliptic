@@ -54,7 +54,7 @@ clean:	## Remove binaries and any temporary files
 	@echo "Clean complete."
 
 .PHONY: test-drive
-test-drive: help build-bigmath build-finitefield build-all run-bigmath test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+test-drive: help build-bigmath build-finitefield build-all run-bigmath run-finitefield test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
