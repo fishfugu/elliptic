@@ -2,6 +2,8 @@ package ellipticcurve
 
 import "math/big"
 
+// NOTE: these are private / immutable on purpose
+
 // EllipticCurve represents an elliptic curve defined by the equation y^2 = x^3 + Ax + B.
 type EllipticCurve struct {
 	a, b float64 // Coefficients of the curve equation.

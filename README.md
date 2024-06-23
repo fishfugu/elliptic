@@ -1,16 +1,19 @@
 # Elliptic Curve Toolbox
 
-Welcome to the Elliptic Curve Toolbox, a comprehensive suite of tools designed for the analysis and manipulation of elliptic curves. This toolbox aims to provide robust utilities for academic research, cryptographic applications, and educational exploration of elliptic curve theory.
+Welcome to the Elliptic Curve Toolbox, tools designed for analysis / manipulation of elliptic curves. Aims to provide utilities for experimentation, and educational exploration of elliptic curve theory.
 
 ## Current Features
 
 - **Big Integer Arithmetic**: Perform arithmetic operations on arbitrarily large integers with precise results.
 
+- **Finite Field Calculation**: Prime number finite field operations. Calculating points on an elliptic curve (in the Weierstrass form) defined on a prime integer finite field. Visualise prime integer finite field points, on an elliptic curve.
+
+
 ## Getting Started
 
 ### Prerequisites
 
-- Go version 1.16 or higher
+- Go version 1.21 or higher
 
 ### Installation
 
@@ -24,40 +27,66 @@ cd elliptic
 #### Build the project
 
 ```
-go build ./cmd/bigmath
+make build-all
 ```
 
-#### Usage
+#### Run tests
 
 To perform big integer arithmetic, run:
 
 ```
-./bigmath
+make test
 ```
 
-This will execute the arithmetic operations defined in `cmd/bigmath/main.go`
+#### Take it all for a test drive
 
-### Examples
+AKA see example output and kick the tyres
 
 ```
-// Add two large numbers
-result, err := bigarith.Add("12345678901234567890", "98765432109876543210")
-if err != nil {
-    fmt.Println("Error:", err)
-} else {
-    fmt.Println("Addition Result:", result)
-}
+make test-drive
+```
+
+### Makefile
+
+```
+Usage: make <TARGETS>
+  help                            Show this help
+  build-bigmath                   Build bigmath executable
+  build-finitefield               Build finitefield executable
+  build-all                       Build the project - all necessary components
+  run-bigmath                     Run bigmath binary after building it - ensuring latest build is executed - running tests first
+  run-finitefield                 Run bigmath binary after building it - ensuring latest build is executed - running tests first
+  test                            Run unit tests for all packages under pkg
+  clean                           Remove binaries and any temporary files
+  test-drive                      Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+  test-quiet                      Run unit tests for all packages under pkg - but quietly - quits at first error
+  test-verbose                    Run unit tests for all packages under pkg - in verbose mode
 ```
 
 ## TODO
-- [ ] Core algorithms for elliptic curve operations
+- [ ] Makefile tidy - organise / make headings for help
+- [ ] Core algos for elliptic curve operations
+    - [x] Arbitrarily large finite filed ops - use BigInt - but make simpler
+    - [x] Find Prime
+        - [ ] Work out how many checks is "good enough"
+    - [ ] Check that use of BigInt versus own reimplement is consistent / sane
+    - [ ] Investigate what "multiplying points" and "multiplicative inverse of points" means (extend lit review work: [SCI395 Course Material](https://www.creativearts.com.au/maths/une/sci395)
+)
 - [ ] Functions for operations within finite fields
+    - [x] Calculate points on an EC in prime finite field
+    - [x] Make ECs into types to hand around (immutable)
+    - [ ] Implement adding points and multplying points in field by real nums
 - [ ] Visualization tools for elliptic curves
+    - [x] Basic text vis output
+    - [ ] Debug the text vis output - scale / reflection line is wrong
+    - [ ] Vis adding and multplying numbers (see implementation above)
+    - [ ] Turn vis into a window with real drawings thingy
+    - [ ] Annimate doubling / adding / rings of points - text and / or proper drawing
 - [ ] Additional command line tools for other utilities
+    - [ ] Turn this interactive and make current code into `testdrive` option
 - [ ] Comprehensive unit tests for elliptic curve functionalities
-- [ ] Enhanced documentation and examples for all tools
+    - [ ] Do "random" test of more complex finite field calcs - rondomly selected in loop,small numbers without bigint, double checked / compared to function output
 
 ## Contributing
 
-Welcome contributions from anyone. To contribute, fork the repository and submit a pull request.
-
+Welcome contributions from anyone. Fork repo / submit PR.

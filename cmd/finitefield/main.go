@@ -16,11 +16,11 @@ func main() {
 	}{
 		{big.NewInt(1), big.NewInt(-1), big.NewInt(17)},
 		{big.NewInt(1), big.NewInt(1), big.NewInt(13)},
-		{big.NewInt(2), big.NewInt(2), big.NewInt(43)},
+		{big.NewInt(2), big.NewInt(3), big.NewInt(43)},
 	}
 
 	for _, curve := range curves {
-		fmt.Printf("Elliptic Curve: y^2 = x^3 + %sx + %s\n%s\n", curve.a.String(), curve.b.String(), curve.p.String(), divider)
+		fmt.Printf("Elliptic Curve: y^2 = x^3 + %sx + %s\nDefined in a finite field modulo %s\n%s\n", curve.a.String(), curve.b.String(), curve.p.String(), divider)
 
 		eCurve := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
 
