@@ -58,6 +58,55 @@ Usage: make <TARGETS>
   test-verbose                    Run unit tests for all packages under pkg - in verbose mode
 ```
 
+## Text Visualisation Example
+```
+2D Plane Visualization with Cartesian Axes, Reflection Line, and Scale:
+|                                                                                        43
+|                                                   *                                   
+|                                             *                                         
+|         *                                                                             
+|           * *                                             *                            39
+|                                                                                       
+|     *                                                                                 
+| *                                                                                     
+|                                                                                        35
+|                                                       *                               
+|                                                             *                         
+|                       *                                                               
+|   *           *                                                 *                      31
+|                                                                           *           
+|                                                                                       
+|                                                                                       
+|                                                                                        27
+|                                           *                                           
+|                     *     *       *                                                   
+|                                                                             *         
+|                                                                               *        23
+| . . . . . . . . . . . . . . * . . . . . . . . . . . . . . . . . . . . . . . . . . . .  43/2
+|                             *                                                         
+|                                                                               *       
+|                                                                             *          19
+|                     *     *       *                                                   
+|                                           *                                           
+|                                                                                       
+|                                                                                        15
+|                                                                                       
+|                                                                           *           
+|   *           *                                                 *                     
+|                       *                                                                11
+|                                                             *                         
+|                                                       *                               
+|                                                                                       
+| *                                                                                      7
+|     *                                                                                 
+|                                                                                       
+|           * *                                             *                           
+|         *                                                                              3
+|                                             *                                         
+|                                                   *                                   
++ - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - * -  0
+```
+
 ## TODO
 - [ ] Makefile tidy - organise / make headings for help
 - [ ] Core algos for elliptic curve operations
