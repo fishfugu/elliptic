@@ -2,6 +2,8 @@
 
 Welcome to the Elliptic Curve Toolbox, tools designed for analysis / manipulation of elliptic curves. Aims to provide utilities for experimentation, and educational exploration of elliptic curve theory.
 
+This is all partly inspired by my work over here: [Recent course output - SCI395, with UNE](https://www.creativearts.com.au/maths/une/sci395). I'll be updating this site and this repo in tandem, as I go, and as I get to different parts of the investigation / analysis.
+
 ## Current Features
 
 - **Big Integer Arithmetic**: Perform arithmetic operations on arbitrarily large integers with precise results.
@@ -90,3 +92,5 @@ Usage: make <TARGETS>
 ## Contributing
 
 Welcome contributions from anyone. Fork repo / submit PR.
+
+Open to questions and input on where to go next - as I'd like to make this whole thing useful to others too.
