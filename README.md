@@ -27,29 +27,22 @@ cd elliptic
 ```
 
 #### Build the project
-
 ```
 make build-all
 ```
 
 #### Run tests
-
-To perform big integer arithmetic, run:
-
 ```
 make test
 ```
 
 #### Take it all for a test drive
-
-AKA see example output and kick the tyres
-
+AKA see example output and kick the tyres:
 ```
 make test-drive
 ```
 
 ### Makefile
-
 ```
 Usage: make <TARGETS>
   help                            Show this help
@@ -90,7 +83,6 @@ Usage: make <TARGETS>
     - [ ] Do "random" test of more complex finite field calcs - rondomly selected in loop,small numbers without bigint, double checked / compared to function output
 
 ## Contributing
-
 Welcome contributions from anyone. Fork repo / submit PR.
 
 Open to questions and input on where to go next - as I'd like to make this whole thing useful to others too.
