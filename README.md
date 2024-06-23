@@ -73,7 +73,8 @@ Usage: make <TARGETS>
     - [ ] Implement adding points and multplying points in field by real nums
 - [ ] Visualization tools for elliptic curves
     - [x] Basic text vis output
-    - [ ] Debug the text vis output - scale / reflection line is wrong
+    - [x] Debug the text vis output - scale / reflection line is wrong
+    - [ ] Improve tick marks / scale numbers under x-axis
     - [ ] Vis adding and multplying numbers (see implementation above)
     - [ ] Turn vis into a window with real drawings thingy
     - [ ] Annimate doubling / adding / rings of points - text and / or proper drawing

@@ -65,8 +65,9 @@ func VisualisePoints(points [][2]string, p int) string {
 		for j := range plane[i] {
 			if i == p {
 				plane[i][j] = '-' // x-axis at the bottom
+				// TODO: get this to put scale under tick points, along x-axis, on extra line
 				if j%tickInterval == 0 && j != 0 {
-					plane[i][j] = '-' // Ticks on the x-axis
+					plane[i][j] = '/' // Ticks on the x-axis
 				}
 			} else if j == 0 {
 				plane[i][j] = '|' // y-axis on the left
@@ -96,11 +97,18 @@ func VisualisePoints(points [][2]string, p int) string {
 	for i, line := range plane {
 		for j, char := range line {
 			result += string(char) + " "
-			if (i == p || i == p/2) && j == p { // Add scale numbers at the end of axes and reflection lines
-				result += fmt.Sprintf(" %d", j)
+			// Add scale numbers at the end of x-axis
+			if (i == p) && j == p {
+				result += " 0"
+			}
+
+			// Add scale numbers at the end of reflection lines
+			if (i == p/2) && j == p {
+				result += fmt.Sprintf(" %d/2", p)
 			}
 		}
-		if i%tickInterval == 0 && i != p { // Label on y-axis
+		// Label on end of line for y-axis scale
+		if i%tickInterval == 0 && i != p {
 			result += fmt.Sprintf(" %d", p-i)
 		}
 		result += "\n"
