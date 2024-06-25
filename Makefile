@@ -1,3 +1,8 @@
+##@ BUILD
+
+.PHONY: build-all
+build-all: build-bigmath build-finitefield	## Build the project - all necessary components
+
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
 	@echo "Building bigmath executable..."
@@ -10,8 +15,13 @@ build-finitefield:	## Build finitefield executable
 	go build -o bin/finitefield ./cmd/finitefield
 	@echo "Build of finitefield complete."
 
-.PHONY: build-all
-build-all: build-bigmath build-finitefield	## Build the project - all necessary components
+.PHONY: build-ecviz
+build-ecviz:	## Build Elliptic Curve Data Viz Tool
+	cd cmd/ecviz
+	$(MAKE) -f cmd/ecviz/Makefile build
+	cd -
+
+##@ RUN
 
 .PHONY: run-bigmath
 run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
@@ -33,6 +43,8 @@ run-finitefield: build-finitefield test-quiet	## Run bigmath binary after buildi
 	./bin/finitefield
 	@echo "Run of finitefield complete."
 
+##@ TEST and CLEAN
+
 .PHONY: test
 test:	## Run unit tests for all packages under pkg
 	@echo "Running tests..."
@@ -51,6 +63,8 @@ test-drive: help build-bigmath build-finitefield build-all run-bigmath run-finit
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
+
+##@ HELPER
 
 ## Helper make targets - not to be run as part of test-drive
 ## They either replicate other stuff or are just inappropriate for running without thinking about it

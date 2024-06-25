@@ -4,14 +4,20 @@ build:	## Build Elliptic Curve Data Viz Tool
 # TODO: Interactive: Zooming / panning to explore parts of curve
 # Labeling: Optionally, labels / different colors to highlight properties / points on curve, such as inflection, zeros, etc.
 	@echo "Building Elliptic Curve Data Viz Tool..."
-	GOOS=darwin GOARCH=amd64 go build -o ecviz
+	GOOS=darwin GOARCH=amd64 go build -o ../../bin/ecviz
 	@echo "Build finished"
 
 .PHONY: run
 run: build	## Run Elliptic Curve Data Viz Tool (after doing a build)
 	@echo "Running Elliptic Curve Data Viz Tool..."
-	./ecviz &
+	../../bin/ecviz &
 	@echo "Elliptic Curve Data Viz Tool running"
+
+.PHONY: clean
+ecviz-clean:	## Clean Elliptic Curve Data Viz Tool binary
+	@echo "Cleaning Elliptic Curve Data Viz Tool binary..."
+	rm ../../bin/ecviz
+	@echo "Elliptic Curve Data Viz Tool binary gone"
 
 .DEFAULT_GOAL := help
 .PHONY: help

@@ -1,0 +1,45 @@
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
+*.dll
+
+# Folders to ignore
+dist/
+vendor/
+
+# Compiled Binary and Executables
+*.exe
+*.out
+*.bin
+*.cmd
+*.test
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Project-specific environment variables
+.env
+.env.local
+
+# Certificate files
+*.cert
+*.key
+*.pem
+
+# Ignore private key files
+*.pfx
+*.p12
+
+# Ignore markdown TOC files
+*.toc
+
+# MacOS specific ignore
+.DS_Store
+.AppleDouble
+.LSOverride
