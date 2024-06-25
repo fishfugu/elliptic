@@ -1,10 +1,3 @@
-.DEFAULT_GOAL := help
-
-.PHONY: help
-help:	## Show this help
-	@echo 'Usage: make <TARGETS>'
-	@awk 'BEGIN {FS = ":.*##"; } /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
-
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
 	@echo "Building bigmath executable..."
@@ -74,3 +67,9 @@ test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
 	go clean -testcache
 	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
 	go tool cover -html=coverage.out
+
+.DEFAULT_GOAL := help
+.PHONY: help
+help:	## Show this help
+	@echo 'Usage: make <TARGETS>'
+	@awk 'BEGIN {FS = ":.*##"; } /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
