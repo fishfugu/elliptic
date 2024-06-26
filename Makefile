@@ -1,25 +1,28 @@
 ##@ BUILD
 
 .PHONY: build-all
-build-all: build-bigmath build-finitefield	## Build the project - all necessary components
+build-all: build-bigmath build-finitefield build-ecviz	## Build the project - all necessary components
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
 	@echo "Building bigmath executable..."
-	go build -o bin/bigmath ./cmd/bigmath
+	GOOS=darwin GOARCH=amd64 go build -o bin/bigmath ./cmd/bigmath
 	@echo "Build of bigmath complete."
 
 .PHONY: build-finitefield
 build-finitefield:	## Build finitefield executable
 	@echo "Building finitefield executable..."
-	go build -o bin/finitefield ./cmd/finitefield
+	GOOS=darwin GOARCH=amd64 go build -o bin/finitefield ./cmd/finitefield
 	@echo "Build of finitefield complete."
 
 .PHONY: build-ecviz
 build-ecviz:	## Build Elliptic Curve Data Viz Tool
-	cd cmd/ecviz
-	$(MAKE) -f cmd/ecviz/Makefile build
-	cd -
+# TODO: Scaling / Translation: Adjust mapping of mathematical coords to screen coords to ensure curve fits in window / maintains aspect ratio
+# TODO: Interactive: Zooming / panning to explore parts of curve
+# Labeling: Optionally, labels / different colors to highlight properties / points on curve, such as inflection, zeros, etc.
+	@echo "Building Elliptic Curve Data Viz Tool..."
+	GOOS=darwin GOARCH=amd64 go build -o bin/ecviz ./cmd/ecviz
+	@echo "Build finished"
 
 ##@ RUN
 
@@ -43,6 +46,16 @@ run-finitefield: build-finitefield test-quiet	## Run bigmath binary after buildi
 	./bin/finitefield
 	@echo "Run of finitefield complete."
 
+.PHONY: run-ecviz
+run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool (after doing a build)
+	@echo
+	@echo "****************************************************************"
+	@echo "✓✓✓✓✓ -- EC Viz Tool built, and tested - continuing on to run..."
+	@echo "****************************************************************"
+	@echo
+	./bin/ecviz &
+	@echo "Elliptic Curve Data Viz Tool running"
+
 ##@ TEST and CLEAN
 
 .PHONY: test
@@ -59,7 +72,7 @@ clean:	## Remove binaries and any temporary files
 	@echo "Clean complete."
 
 .PHONY: test-drive
-test-drive: help build-bigmath build-finitefield build-all run-bigmath run-finitefield test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+test-drive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
