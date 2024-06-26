@@ -1,9 +1,7 @@
-.DEFAULT_GOAL := help
+##@ BUILD
 
-.PHONY: help
-help:	## Show this help
-	@echo 'Usage: make <TARGETS>'
-	@awk 'BEGIN {FS = ":.*##"; } /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+.PHONY: build-all
+build-all: build-bigmath build-finitefield	## Build the project - all necessary components
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
@@ -17,8 +15,13 @@ build-finitefield:	## Build finitefield executable
 	go build -o bin/finitefield ./cmd/finitefield
 	@echo "Build of finitefield complete."
 
-.PHONY: build-all
-build-all: build-bigmath build-finitefield	## Build the project - all necessary components
+.PHONY: build-ecviz
+build-ecviz:	## Build Elliptic Curve Data Viz Tool
+	cd cmd/ecviz
+	$(MAKE) -f cmd/ecviz/Makefile build
+	cd -
+
+##@ RUN
 
 .PHONY: run-bigmath
 run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
@@ -40,6 +43,8 @@ run-finitefield: build-finitefield test-quiet	## Run bigmath binary after buildi
 	./bin/finitefield
 	@echo "Run of finitefield complete."
 
+##@ TEST and CLEAN
+
 .PHONY: test
 test:	## Run unit tests for all packages under pkg
 	@echo "Running tests..."
@@ -59,6 +64,8 @@ test-drive: help build-bigmath build-finitefield build-all run-bigmath run-finit
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
 
+##@ HELPER
+
 ## Helper make targets - not to be run as part of test-drive
 ## They either replicate other stuff or are just inappropriate for running without thinking about it
 
@@ -74,3 +81,9 @@ test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
 	go clean -testcache
 	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
 	go tool cover -html=coverage.out
+
+.DEFAULT_GOAL := help
+.PHONY: help
+help:	## Show this help
+	@echo 'Usage: make <TARGETS>'
+	@awk 'BEGIN {FS = ":.*##"; } /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
