@@ -64,7 +64,7 @@ github.com/fyne-io/glfw-js
 # github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2
 ## explicit; go 1.14
 github.com/fyne-io/image/ico
-# github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
+# github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71
 ## explicit; go 1.12
 github.com/go-gl/gl/v2.1/gl
 github.com/go-gl/gl/v2.1/gl/KHR
