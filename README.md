@@ -1,8 +1,8 @@
 # Elliptic Curve Toolbox
 
-Welcome to the Elliptic Curve Toolbox, tools designed for analysis / manipulation of elliptic curves. Aims to provide utilities for experimentation, and educational exploration of elliptic curve theory.
+Tools for analysis / manipulation of elliptic curves. Provides utilities for experimentation, and educational exploration of elliptic curve theory.
 
-This is all partly inspired by my work over here: [Recent course output - SCI395, with UNE](https://www.creativearts.com.au/maths/une/sci395). I'll be updating this site and this repo in tandem, as I go, and as I get to different parts of the investigation / analysis.
+All partly inspired by my work over here: [Recent course output - SCI395, with UNE](https://www.creativearts.com.au/maths/une/sci395). I'll be updating this site and this repo in tandem, as I go, and as I get to different parts of the investigation / analysis.
 
 ## Current Features
 
@@ -16,6 +16,11 @@ This is all partly inspired by my work over here: [Recent course output - SCI395
 ### Prerequisites
 
 - Go version 1.21 or higher
+
+May need this:
+```
+xcode-select --install
+```
 
 ### Installation
 
@@ -45,17 +50,27 @@ make test-drive
 ### Makefile
 ```
 Usage: make <TARGETS>
-  help                            Show this help
+
+BUILD
+  build-all                       Build the project - all necessary components
   build-bigmath                   Build bigmath executable
   build-finitefield               Build finitefield executable
-  build-all                       Build the project - all necessary components
+  build-ecviz                     Build Elliptic Curve Data Viz Tool
+
+RUN
   run-bigmath                     Run bigmath binary after building it - ensuring latest build is executed - running tests first
-  run-finitefield                 Run bigmath binary after building it - ensuring latest build is executed - running tests first
+  run-finitefield                 Run finitefield binary after building it - ensuring latest build is executed - running tests first
+  run-ecviz                       Run Elliptic Curve Data Viz Tool (after doing a build)
+
+TEST and CLEAN
   test                            Run unit tests for all packages under pkg
   clean                           Remove binaries and any temporary files
-  test-drive                      Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+  testdrive                       Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+
+HELPER
   test-quiet                      Run unit tests for all packages under pkg - but quietly - quits at first error
   test-verbose                    Run unit tests for all packages under pkg - in verbose mode
+  help                            Show this help
 ```
 
 ## Text Visualisation Example
@@ -108,7 +123,7 @@ Usage: make <TARGETS>
 ```
 
 ## TODO
-- [ ] Makefile tidy - organise / make headings for help
+- [x] Makefile tidy - organise / make headings for help
 - [ ] Core algos for elliptic curve operations
     - [x] Arbitrarily large finite filed ops - use BigInt - but make simpler
     - [x] Find Prime

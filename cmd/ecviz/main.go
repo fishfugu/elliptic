@@ -16,7 +16,7 @@ func main() {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Elliptic Curve Visualization in Finite Field")
 
-	// Initialize curve parameters and create curve
+	// Initialise curve parameters and create curve
 	a, b, p := big.NewInt(1), big.NewInt(1), big.NewInt(13)
 	curve := ellipticcurve.NewFiniteFieldEC(a, b, p)
 
