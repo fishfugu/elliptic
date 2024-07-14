@@ -1,7 +1,7 @@
 ##@ BUILD
 
 .PHONY: build-all
-build-all: build-bigmath build-finitefield build-ecviz	## Build the project - all necessary components
+build-all: build-bigmath build-finitefield build-ecviz build-ellipticcurvecli	## Build the project - all necessary components
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
@@ -24,6 +24,12 @@ build-ecviz:	## Build Elliptic Curve Data Viz Tool
 	GOOS=darwin GOARCH=amd64 go build -o bin/ecviz ./cmd/ecviz
 	@echo "Build finished"
 
+.PHONY: build-ellipticcurvecli
+build-ellipticcurvecli:	## Build ellipticcurvecli executable
+	@echo "Building ellipticcurvecli executable..."
+	GOOS=darwin GOARCH=amd64 go build -o bin/ellipticcurvecli ./cmd/ellipticcurvecli
+	@echo "Build of ellipticcurvecli complete."
+
 ##@ RUN
 
 .PHONY: run-bigmath
@@ -37,7 +43,7 @@ run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - 
 	@echo "Run of bigmath complete."
 
 .PHONY: run-finitefield
-run-finitefield: build-finitefield test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
+run-finitefield: build-finitefield test-quiet	## Run finitefield binary after building it - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
 	@echo "✓✓✓✓✓ -- Finitefield built, and tested - continuing on to run..."
@@ -62,8 +68,9 @@ run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool (after doi
 test:	## Run unit tests for all packages under pkg
 	@echo "Running tests..."
 	go clean -testcache
-	go test -v ./pkg/... -coverprofile=coverage.out
-	go tool cover -html=coverage.out
+	go test -v ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	open coverage.html
 
 .PHONY: clean
 clean:	## Remove binaries and any temporary files
@@ -71,8 +78,8 @@ clean:	## Remove binaries and any temporary files
 	rm -rf bin
 	@echo "Clean complete."
 
-.PHONY: test-drive
-test-drive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+.PHONY: testdrive
+testdrive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"
@@ -93,7 +100,8 @@ test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
 	@echo "Running tests in verbose mode..."
 	go clean -testcache
 	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
-	go tool cover -html=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+	open coverage.html
 
 .DEFAULT_GOAL := help
 .PHONY: help
