@@ -1,7 +1,7 @@
 ##@ BUILD
 
 .PHONY: build-all
-build-all: build-bigmath build-finitefield build-ecviz build-ellipticcurvecli	## Build the project - all necessary components
+build-all: clean build-bigmath build-finitefield build-ecviz build-ellipticcurvecli	## Build the project - all necessary components - cleans first
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
@@ -21,7 +21,10 @@ build-ecviz:	## Build Elliptic Curve Data Viz Tool
 # TODO: Interactive: Zooming / panning to explore parts of curve
 # Labeling: Optionally, labels / different colors to highlight properties / points on curve, such as inflection, zeros, etc.
 	@echo "Building Elliptic Curve Data Viz Tool..."
-	GOOS=darwin GOARCH=amd64 go build -o bin/ecviz ./cmd/ecviz
+	# NOTE: "CGO_ENABLED=1" added to get it to build
+	# "go env CGO_ENABLED" retuns 1... so I don't know why it needed to be set explicity?
+	# TODO: investigate and clarify
+	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -tags gl -o bin/ecviz ./cmd/ecviz
 	@echo "Build finished"
 
 .PHONY: build-ellipticcurvecli
@@ -73,9 +76,12 @@ test:	## Run unit tests for all packages under pkg
 	open coverage.html
 
 .PHONY: clean
-clean:	## Remove binaries and any temporary files
+clean:	## Remove binaries and any temporary files, tidies mods, removes vendor, rebuilds it
 	@echo "Cleaning up..."
 	rm -rf bin
+	go mod tidy
+	rm -rf vendor
+	go mod vendor
 	@echo "Clean complete."
 
 .PHONY: testdrive
@@ -102,6 +108,16 @@ test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
 	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
 	go tool cover -html=coverage.out -o coverage.html
 	open coverage.html
+
+.PHONY: install
+install: install-requirements build-all	## Installs requirements, and then run build all to get all the binaries built
+	@echo "Elliptic packages successfully installed."
+
+.PHONY: install-requirements
+install-requirements:	## Installs requirements
+	@echo "Installing requirements..."
+	brew install --cask xquartz
+	@echo "Requirements installed."
 
 .DEFAULT_GOAL := help
 .PHONY: help

@@ -169,10 +169,14 @@ func FindPrime(low, high string) (string, error) {
 
 	// Start searching for a prime at the low end of the range
 	for p := lowInt; p.Cmp(highInt) <= 0; p.Add(p, big.NewInt(1)) {
-		if p.ProbablyPrime(20) { // 20 iterations of Miller-Rabin, quite strong
+		if ProbablyPrime(p) {
 			return p.String(), nil
 		}
 	}
 
 	return "", fmt.Errorf("no prime found in the specified range")
+}
+
+func ProbablyPrime(p *big.Int) bool {
+	return p.ProbablyPrime(100) // 100 iterations of Miller-Rabin, quite strong
 }
