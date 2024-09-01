@@ -47,12 +47,29 @@ func main() {
 	}
 
 	// Calc / display "lowest x value where y = 0" value
-	minX, err := ellipticcurve.FindMinX(*curve)
+	roots, err := curve.SolveCubic()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding minimum x value where y = 0: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
 		os.Exit(1)
 	}
-	fmt.Printf("Minimum x value, where y = 0: %.5f\n", minX)
+
+	fmt.Printf("Roots: %v\n", roots)
+	// minX, err := curve.SolveCubic()
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error finding minimum x value where y = 0: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Printf("Minimum x value, where y = 0: %.5f\n", minX)
+
+	// Check y vaqlue for x calculated
+	// TODO: work out how to use "accuracy" and do error handling here
+	// minXFloat, _ := minX.Float64()
+	// y, err := curve.FindY(minXFloat)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error calculating y - checking minX value: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// fmt.Printf("Check y value (should be '0'): %.5f\n", y)
 
 	// Calc / display where tangent to EC goes through minX
 
