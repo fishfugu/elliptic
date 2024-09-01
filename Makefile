@@ -1,7 +1,7 @@
 ##@ BUILD
 
 .PHONY: build-all
-build-all: build-bigmath build-finitefield build-ecviz build-ellipticcurvecli	## Build the project - all necessary components
+build-all: build-bigmath build-finitefield build-ecviz build-cli	## Build the project - all necessary components
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
@@ -24,8 +24,8 @@ build-ecviz:	## Build Elliptic Curve Data Viz Tool
 	GOOS=darwin GOARCH=amd64 go build -o bin/ecviz ./cmd/ecviz
 	@echo "Build finished"
 
-.PHONY: build-ellipticcurvecli
-build-ellipticcurvecli:	## Build ellipticcurvecli executable
+.PHONY: build-cli
+build-cli:	## Build ellipticcurvecli executable
 	@echo "Building ellipticcurvecli executable..."
 	GOOS=darwin GOARCH=amd64 go build -o bin/ellipticcurvecli ./cmd/ellipticcurvecli
 	@echo "Build of ellipticcurvecli complete."
@@ -40,6 +40,7 @@ run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - 
 	@echo "************************************************************"
 	@echo
 	./bin/bigmath
+	@echo
 	@echo "Run of bigmath complete."
 
 .PHONY: run-finitefield
@@ -50,6 +51,7 @@ run-finitefield: build-finitefield test-quiet	## Run finitefield binary after bu
 	@echo "****************************************************************"
 	@echo
 	./bin/finitefield
+	@echo
 	@echo "Run of finitefield complete."
 
 .PHONY: run-ecviz
@@ -60,7 +62,19 @@ run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool (after doi
 	@echo "****************************************************************"
 	@echo
 	./bin/ecviz &
+	@echo
 	@echo "Elliptic Curve Data Viz Tool running"
+
+.PHONY: run-cli
+run-cli: build-cli test-quiet	## Run Elliptic Curve Data Viz Tool (after doing a build)
+	@echo
+	@echo "***********************************************************************"
+	@echo "✓✓✓✓✓ -- Elliptic Curve CLI built, and tested - continuing on to run..."
+	@echo "***********************************************************************"
+	@echo
+	./bin/ellipticcurvecli
+	@echo
+	@echo "Run of Elliptic Curve CLI (without visualise) complete"
 
 ##@ TEST and CLEAN
 
@@ -78,8 +92,8 @@ clean:	## Remove binaries and any temporary files
 	rm -rf bin
 	@echo "Clean complete."
 
-.PHONY: testdrive
-testdrive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+.PHONY: test-drive
+test-drive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"

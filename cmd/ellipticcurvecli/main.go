@@ -14,7 +14,7 @@ func main() {
 	aFlag := flag.String("A", "", "Coefficient A of the elliptic curve")
 	bFlag := flag.String("B", "", "Coefficient B of the elliptic curve")
 	pFlag := flag.String("P", "", "Prime modulus P of the finite field")
-	visualizeFlag := flag.Bool("visualise", false, "Visualise the points on the elliptic curve")
+	visualiseFlag := flag.Bool("visualise", false, "Visualise the points on the elliptic curve")
 	flag.Parse()
 
 	// Prompt user for missing values
@@ -41,10 +41,21 @@ func main() {
 	fmt.Println(finiteintfield.FormatPoints(points))
 
 	// Visualize points if the flag is set
-	if *visualizeFlag {
-		visualization := finiteintfield.VisualisePoints(points, int(pInt.Int64()))
-		fmt.Println(visualization)
+	if *visualiseFlag {
+		visualisation := finiteintfield.VisualisePoints(points, int(pInt.Int64()))
+		fmt.Println(visualisation)
 	}
+
+	// Calc / display "lowest x value where y = 0" value
+	minX, err := ellipticcurve.FindMinX(*curve)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error finding minimum x value where y = 0: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Minimum x value, where y = 0: %.5f\n", minX)
+
+	// Calc / display where tangent to EC goes through minX
+
 }
 
 // getInput prompts the user for input if the provided value is empty.

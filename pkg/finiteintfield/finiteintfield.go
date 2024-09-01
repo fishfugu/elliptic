@@ -45,6 +45,73 @@ func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]string, error) {
 	return points, nil
 }
 
+// THIS IS A HALF FINSIHED THOUGHT
+// I was going to build a function that moved all the points into the range "first position" decribed below in comments
+// But I don't think I need it
+// I think I need the other way around - i.e. search for points in Z on EC  from y=0 position up the x-axis in integers...
+// so... commenting out for now...
+// TODO - finish if necessary - or delete with comment linking to half finished version in git history...
+// ...
+// // Take a list of points and an elliptic curve and convert them to version where
+// // finite field box goes from { y: 1/2 p <= y < 1/2 p }, and calculate x = x_0 where y = 0,
+// // { x: x_0 <= x < x_0 + p }
+// func ConvertPointsToFirstPosition(FFEC ellipticcurve.FiniteFieldEC, initialPoints [][2]string) ([][2]string, error) {
+// 	// Work out minimum value for which y = 0 on EC
+// 	// x^3 + Ax + B = 0
+// 	// x^3 + Ax = -B
+// 	// x (x^2 + A) = -B
+// 	_, _, pBigInt := FFEC.GetDetails()
+// 	p := pBigInt.String()
+
+// 	firstPositionPoints := [][2]string{}
+
+// 	for _, point := range initialPoints {
+// 		y := point[1]
+// 		halfP, err := bigarith.Divide(p, "2")
+// 		if err != nil {
+// 			return firstPositionPoints, err
+// 		}
+// 		negHalfP := fmt.Sprintf("-%s", halfP)
+
+// 		yHalfPCmp, err := bigarith.Cmp(y, halfP)
+// 		if err != nil {
+// 			return firstPositionPoints, err
+// 		}
+// 		// if y >= halfP ...
+// 		for yHalfPCmp >= 0 {
+// 			// keep subtracting p until it's in the right range
+// 			newY, err := bigarith.Subtract(y, p)
+// 			if err != nil {
+// 				return firstPositionPoints, err
+// 			}
+// 			yHalfPCmp, err = bigarith.Cmp(newY, halfP)
+// 			if err != nil {
+// 				return firstPositionPoints, err
+// 			}
+// 			y = newY
+// 		}
+
+// 		yNegHalfPCmp, err := bigarith.Cmp(y, negHalfP)
+// 		if err != nil {
+// 			return firstPositionPoints, err
+// 		}
+// 		// if y < -halfP ...
+// 		for yNegHalfPCmp < 0 {
+// 			// keep adding p until it's in the right range
+// 			newY, err := bigarith.Add(y, p)
+// 			if err != nil {
+// 				return firstPositionPoints, err
+// 			}
+// 			yNegHalfPCmp, err = bigarith.Cmp(newY, negHalfP)
+// 			if err != nil {
+// 				return firstPositionPoints, err
+// 			}
+// 			y = newY
+// 		}
+// 	}
+// 	return firstPositionPoints, nil
+// }
+
 // FormatPoints formats a list of points for easy command line reading
 func FormatPoints(points [][2]string) string {
 	result := "List of Points on the Curve:\n"
@@ -117,9 +184,6 @@ func VisualisePoints(points [][2]string, p int) string {
 	return result
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
+// func FindY(FFEC ellipticcurve.FiniteFieldEC) (float64, error) {
+
+// }

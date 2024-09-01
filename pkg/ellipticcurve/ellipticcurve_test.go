@@ -34,7 +34,7 @@ func (suite *EllipticCurveTestSuite) SetupTest() {
 
 // TestNewEllipticCurve tests the creation of a new EllipticCurve.
 func (suite *EllipticCurveTestSuite) TestNewEllipticCurve() {
-	a, b := 1.0, -1.0
+	a, b := big.NewInt(1), big.NewInt(-1)
 	curve := NewEllipticCurve(a, b)
 	gotA, gotB := curve.GetDetails()
 
