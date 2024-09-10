@@ -1,10 +1,11 @@
 package ellipticcurve
 
 import (
+	"elliptic/pkg/bigarith"
+
 	"fmt"
 	"math"
 	"math/big"
-	"math/cmplx"
 )
 
 // NOTE: these are private / immutable on purpose
@@ -51,38 +52,79 @@ func (ffec *FiniteFieldEC) GetDetails() (*big.Int, *big.Int, *big.Int) {
 // lowest value of x for the whole curve in the real numbers
 
 // solveCubic for form x^3 + Ax + B - real roots only
-func (ec EllipticCurve) SolveCubic() ([]float64, error) {
-	// TODO: do error handling of floats
-	// TODO: convert this to strings - or big int...?
-	A, _ := ec.a.Float64()
-	B, _ := ec.b.Float64()
-	discriminant := math.Abs(-(4 * math.Pow(A, 3.0)) - (27 * math.Pow(B, 2.0)))
+func (ec EllipticCurve) SolveCubic() ([]string, error) {
+	var roots []string
 
-	switch discriminant {
-	case > 0:
-		x, y = y, x+y
-	case <-quit:
-		fmt.Println("quit")
-		return
+	ABigInt, BBigInt := ec.GetDetails()
+	A := ABigInt.String()
+	B := BBigInt.String()
+
+	// Calculate the discriminant
+	AOver3, AOver3Err := bigarith.Divide(A, "3")
+	BOver2, BOver2Err := bigarith.Divide(B, "2")
+	AOver3Cubed, AOver3CubedErr := bigarith.Exp(AOver3, "3", "")
+	BOver2Squared, BOver2SquaredErr := bigarith.Exp(BOver2, "2", "")
+	delta, deltaErr := bigarith.Add(AOver3Cubed, BOver2Squared)
+	if AOver3Err != nil || BOver2Err != nil || AOver3CubedErr != nil || BOver2SquaredErr != nil || deltaErr != nil {
+		return nil, fmt.Errorf("error in some stage of creating delta in SolveCubic - AOver3Err: %v - BOver2Err: %v - AOver3CubedErr: %v - BOver2SquaredErr: %v - deltaErr: %v", AOver3Err, BOver2Err, AOver3CubedErr, BOver2SquaredErr, deltaErr)
 	}
 
-	fmt.Printf("det: %v\n", det)
+	deltaCmpToZero, err := bigarith.Cmp(delta, "0")
+	if err != nil {
+		return nil, fmt.Errorf("error creating deltaIsGreaterThanZero in SolveCubic")
+	}
 
-	// Calculate discriminant
-	D := cmplx.Rect(-B/2.0, math.Sqrt(det))
-	cubeRootD := cmplx.Pow(D, 1.0/3.0)
-	R := real(cubeRootD)
-	I := imag(cubeRootD)
+	if deltaCmpToZero > 0 {
+		// One real root, two complex roots
+		C, err := bigarith.Exp(delta, "0.5", delta)
+		if err != nil {
+			return nil, fmt.Errorf("error creating C in SolveCubic")
+		}
+		NegativeBOver2, err := bigarith.Multiply(BOver2, "-1")
+		if err != nil {
+			return nil, fmt.Errorf("error creating NegativeBOver2 in SolveCubic")
+		}
+		NegativeBOver2PlusC, err := bigarith.Add(NegativeBOver2, C)
+		if err != nil {
+			return nil, fmt.Errorf("error creating NegativeBOver2PlusC in SolveCubic")
+		}
+		u, err := bigarith.Exp(NegativeBOver2PlusC, "0.333333333333", NegativeBOver2PlusC)
+		if err != nil {
+			return nil, fmt.Errorf("error creating u in SolveCubic")
+		}
+		NegativeBOver2MinusC, err := bigarith.Subtract(NegativeBOver2, C)
+		if err != nil {
+			return nil, fmt.Errorf("error creating NegativeBOver2MinusC in SolveCubic")
+		}
+		v, err := bigarith.Exp(NegativeBOver2MinusC, "0.333333333333", NegativeBOver2PlusC)
+		if err != nil {
+			return nil, fmt.Errorf("error creating v in SolveCubic")
+		}
 
-	// Three roots
-	x1 := 2.0 * R
-	x2 := -R + (math.Sqrt(3.0) * I)
-	x3 := -R - (math.Sqrt(3.0) * I)
+		root, err := bigarith.Add(u, v)
+		roots = append(roots, root)
 
-	return []float64{x1, x2, x3}, nil
+	} else if deltaCmpToZero == 0 {
+		// All roots are real, at least two are equal
+		// u := math.Cbrt(-B / 2)
+		// root1 := u + u
+		// root2 := -u
+		// roots = append(roots, root1, root2, root2)
+
+	} else {
+		// Three real roots (delta < 0)
+		// theta := math.Acos(-B / 2 * math.Sqrt(27/math.Pow(A, 3)))
+		// r := 2 * math.Sqrt(-A/3)
+		// root1 := r * math.Cos(theta/3)
+		// root2 := r * math.Cos((theta+2*math.Pi)/3)
+		// root3 := r * math.Cos((theta+4*math.Pi)/3)
+		// roots = append(roots, root1, root2, root3)
+	}
+
+	return roots, err
 }
 
-func (ffec FiniteFieldEC) SolveCubic() ([]float64, error) {
+func (ffec FiniteFieldEC) SolveCubic() ([]string, error) {
 	return ffec.ec.SolveCubic()
 }
 

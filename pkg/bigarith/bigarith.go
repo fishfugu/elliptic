@@ -15,9 +15,7 @@ func Add(a, b string) (string, error) {
 	if !okX || !okY {
 		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
-
-	result := new(big.Int).Add(x, y)
-	return result.String(), nil
+	return new(big.Int).Add(x, y).String(), nil
 }
 
 // Subtract takes two string representations of integers, subtracts the second from the first,
@@ -31,14 +29,13 @@ func Subtract(a, b string) (string, error) {
 	if !okX || !okY {
 		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
-
-	result := new(big.Int).Sub(x, y)
-	return result.String(), nil
+	return new(big.Int).Sub(x, y).String(), nil
 }
 
 // Multiply takes two string representations of integers, multiplies them,
 // and returns the result as a string.
 // Returns an error if the input strings are not valid integers.
+// big.Int Mul sets z to the product x*y and returns z.
 func Multiply(a, b string) (string, error) {
 	x := new(big.Int)
 	y := new(big.Int)
@@ -47,9 +44,7 @@ func Multiply(a, b string) (string, error) {
 	if !okX || !okY {
 		return "", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
 	}
-
-	result := new(big.Int).Mul(x, y)
-	return result.String(), nil
+	return new(big.Int).Mul(x, y).String(), nil
 }
 
 // DivideInField takes two string representations of integers, divides a by b,
@@ -108,15 +103,19 @@ func ModularInverse(a, p string) (string, error) {
 
 	// Calculate a^(p-2) mod p
 	pMinusTwo := new(big.Int).Sub(pInt, big.NewInt(2)) // p-2
-	inverse := new(big.Int).Exp(aInt, pMinusTwo, pInt)
-	return inverse.String(), nil
+	return new(big.Int).Exp(aInt, pMinusTwo, pInt).String(), nil
 }
 
 // Divide takes two string representations of integers
 // Returns an error explaining why it isn't implemented.
+// See `DivideInField` for division in modular case.
 func Divide(a, b string) (string, error) {
-	return "", fmt.Errorf("division not implemented - due to ambiguous integer results")
-
+	x, okX := new(big.Float).SetString(a)
+	y, okY := new(big.Float).SetString(b)
+	if !okX || !okY {
+		return "0", fmt.Errorf("invalid input: a = %s, b = %s - cannot create all the integers required, from this input", a, b)
+	}
+	return new(big.Float).Quo(x, y).String(), nil
 }
 
 // Cmp compares two integers represented as strings and returns:
@@ -130,11 +129,23 @@ func Cmp(a, b string) (int, error) {
 	return x.Cmp(y), nil
 }
 
-// Exp computes the exponentiation of base a to exp e modulo m.
+// Exp computes the exponentiation of base b to exp e modulo m - represented as strings.
+// If m == "", returns b**e unless y <= 0 then returns "1".
+// big.Int Exp sets z = x**y mod |m| (i.e. the sign of m is ignored), and returns z.
+// If m == nil or m == 0, z = x**y unless y <= 0 then z = 1.
+// If m != 0, y < 0, and x and m are not relatively prime, z is unchanged and nil is returned.
 func Exp(b, e, m string) (string, error) {
 	base, okB := new(big.Int).SetString(b, 10)
 	exp, okE := new(big.Int).SetString(e, 10)
-	mod, okM := new(big.Int).SetString(m, 10)
+
+	var mod *big.Int
+	var okM bool
+	if m == "" {
+		mod = nil
+		okM = true
+	} else {
+		mod, okM = new(big.Int).SetString(m, 10)
+	}
 	if !okB || !okE || !okM {
 		return "", fmt.Errorf("invalid input: b = %s, e = %s, m = %s - cannot create all the integers required, from this input", b, e, m)
 	}
@@ -143,6 +154,9 @@ func Exp(b, e, m string) (string, error) {
 }
 
 // Mod performs the modulus operation of a by m.
+// big.Int Mod sets z to the modulus x%y for y != 0 and returns z.
+// If y == 0, a division-by-zero run-time panic occurs.
+// Mod implements Euclidean modulus (unlike Go); see [Int.DivMod] for more details.
 func Mod(a, m string) (string, error) {
 	x, okX := new(big.Int).SetString(a, 10)
 	mod, okM := new(big.Int).SetString(m, 10)
