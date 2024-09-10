@@ -56,7 +56,15 @@ func (ec EllipticCurve) SolveCubic() ([]float64, error) {
 	// TODO: convert this to strings - or big int...?
 	A, _ := ec.a.Float64()
 	B, _ := ec.b.Float64()
-	det := math.Abs(-math.Pow((A/3.0), 3.0) - math.Pow((B/2.0), 2.0))
+	discriminant := math.Abs(-(4 * math.Pow(A, 3.0)) - (27 * math.Pow(B, 2.0)))
+
+	switch discriminant {
+	case > 0:
+		x, y = y, x+y
+	case <-quit:
+		fmt.Println("quit")
+		return
+	}
 
 	fmt.Printf("det: %v\n", det)
 

@@ -1,34 +1,34 @@
 package ellipticcurve
 
 import (
-	"fmt"
 	"math/cmplx"
 )
 
-func solveCubic(a, b, c, d float64) ([]complex128, error) {
-	if a == 0 {
-		return nil, fmt.Errorf("the coefficient 'a' must not be zero for a cubic equation")
-	}
+// initial implementation kept here for possible reimplementation
+// func solveCubic(a, b, c, d float64) ([]complex128, error) {
+// 	if a == 0 {
+// 		return nil, fmt.Errorf("the coefficient 'a' must not be zero for a cubic equation")
+// 	}
 
-	// Convert to normalized cubic t^3 + pt + q = 0
-	p := (3*a*c - b*b) / (3 * a * a)
-	q := (2*b*b*b - 9*a*b*c + 27*a*a*d) / (27 * a * a * a)
+// 	// Convert to normalized cubic t^3 + pt + q = 0
+// 	p := (3*a*c - b*b) / (3 * a * a)
+// 	q := (2*b*b*b - 9*a*b*c + 27*a*a*d) / (27 * a * a * a)
 
-	// Calculate discriminant
-	D := cmplx.Rect(-(4*p*p*p + 27*q*q), 0)
+// 	// Calculate discriminant
+// 	D := cmplx.Rect(-(4*p*p*p + 27*q*q), 0)
 
-	cmplx.Rect(-0.5, 0)
-	// Solution via Cardano's formula
-	u := cmplx.Pow(cmplxNum(-0.5)*cmplxNum(q)+cmplx.Sqrt(D)/2, 1.0/3)
-	v := cmplx.Pow(cmplxNum(-0.5)*cmplxNum(q)-cmplx.Sqrt(D)/2, 1.0/3)
+// 	cmplx.Rect(-0.5, 0)
+// 	// Solution via Cardano's formula
+// 	u := cmplx.Pow(cmplxNum(-0.5)*cmplxNum(q)+cmplx.Sqrt(D)/2, 1.0/3)
+// 	v := cmplx.Pow(cmplxNum(-0.5)*cmplxNum(q)-cmplx.Sqrt(D)/2, 1.0/3)
 
-	// Three roots
-	x1 := u + v - complex(b/(3*a), 0)
-	x2 := -0.5*(u+v) - complex(b/(3*a), 0) + cmplx.Sqrt(3)/2*(u-v)*complex(0, 1)
-	x3 := -0.5*(u+v) - complex(b/(3*a), 0) - cmplx.Sqrt(3)/2*(u-v)*complex(0, 1)
+// 	// Three roots
+// 	x1 := u + v - complex(b/(3*a), 0)
+// 	x2 := -0.5*(u+v) - complex(b/(3*a), 0) + cmplx.Sqrt(3)/2*(u-v)*complex(0, 1)
+// 	x3 := -0.5*(u+v) - complex(b/(3*a), 0) - cmplx.Sqrt(3)/2*(u-v)*complex(0, 1)
 
-	return []complex128{x1, x2, x3}, nil
-}
+// 	return []complex128{x1, x2, x3}, nil
+// }
 
 // TODO: turn solveCubic into something using bigarith instead of cmplx
 // because it can't handle big numbers right now!
