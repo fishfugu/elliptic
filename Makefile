@@ -33,7 +33,7 @@ build-cli:	## Build ellipticcurvecli executable
 ##@ RUN
 
 .PHONY: run-bigmath
-run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - ensuring latest build is executed - running tests first
+run-bigmath: build-bigmath test-quiet	## Run bigmath binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "************************************************************"
 	@echo "✓✓✓✓✓ -- Bigmath built, and tested - continuing on to run..."
@@ -44,7 +44,7 @@ run-bigmath: build-bigmath test-quiet	## Run bigmath binary after building it - 
 	@echo "Run of bigmath complete."
 
 .PHONY: run-finitefield
-run-finitefield: build-finitefield test-quiet	## Run finitefield binary after building it - ensuring latest build is executed - running tests first
+run-finitefield: build-finitefield test-quiet	## Run finitefield binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
 	@echo "✓✓✓✓✓ -- Finitefield built, and tested - continuing on to run..."
@@ -55,7 +55,7 @@ run-finitefield: build-finitefield test-quiet	## Run finitefield binary after bu
 	@echo "Run of finitefield complete."
 
 .PHONY: run-ecviz
-run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool (after doing a build)
+run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
 	@echo "✓✓✓✓✓ -- EC Viz Tool built, and tested - continuing on to run..."
@@ -66,7 +66,7 @@ run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool (after doi
 	@echo "Elliptic Curve Data Viz Tool running"
 
 .PHONY: run-cli
-run-cli: build-cli test-quiet	## Run Elliptic Curve Data Viz Tool (after doing a build)
+run-cli: build-cli test-quiet	## Run Elliptic Curve CLI - ensuring latest build is executed - running tests first
 	@echo
 	@echo "***********************************************************************"
 	@echo "✓✓✓✓✓ -- Elliptic Curve CLI built, and tested - continuing on to run..."

@@ -59,49 +59,65 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 	A := ABigInt.String()
 	B := BBigInt.String()
 
-	// Calculate the discriminant
-	AOver3, AOver3Err := bigarith.Divide(A, "3")
-	BOver2, BOver2Err := bigarith.Divide(B, "2")
-	AOver3Cubed, AOver3CubedErr := bigarith.Exp(AOver3, "3", "")
-	BOver2Squared, BOver2SquaredErr := bigarith.Exp(BOver2, "2", "")
-	delta, deltaErr := bigarith.Add(AOver3Cubed, BOver2Squared)
-	if AOver3Err != nil || BOver2Err != nil || AOver3CubedErr != nil || BOver2SquaredErr != nil || deltaErr != nil {
-		return nil, fmt.Errorf("error in some stage of creating delta in SolveCubic - AOver3Err: %v - BOver2Err: %v - AOver3CubedErr: %v - BOver2SquaredErr: %v - deltaErr: %v", AOver3Err, BOver2Err, AOver3CubedErr, BOver2SquaredErr, deltaErr)
+	// Calculate the discriminant - (A/3)^3 + (B/2)^2 = (A^3)/(3^3) + (B^2)/(2^2) = (A^3)/27 + (B^2)/4
+	ACubed, ACubedErr := bigarith.Exp(A, "3", "")
+	BSquared, BSquaredErr := bigarith.Exp(B, "2", "")
+	ACubedOver9, ACubedOver9Err := bigarith.Divide(ACubed, "9")
+	BSquaredOver4, BSquaredOver4Err := bigarith.Divide(BSquared, "4")
+	delta, deltaErr := bigarith.AddFloat(ACubedOver9, BSquaredOver4)
+	if ACubedErr != nil || BSquaredErr != nil || ACubedOver9Err != nil || BSquaredOver4Err != nil || deltaErr != nil {
+		return nil,
+			fmt.Errorf(`error in some stage of creating delta in SolveCubic
+				ACubedErr: %v
+				BSquaredErr: %v
+				ACubedOver9Err: %v
+				BSquaredOver4Err: %v
+				deltaErr: %v
+`,
+				ACubedErr,
+				BSquaredErr,
+				ACubedOver9Err,
+				BSquaredOver4Err,
+				deltaErr,
+			)
 	}
 
-	deltaCmpToZero, err := bigarith.Cmp(delta, "0")
+	deltaCmpToZero, err := bigarith.CmpFloat(delta, "0")
 	if err != nil {
-		return nil, fmt.Errorf("error creating deltaIsGreaterThanZero in SolveCubic")
+		return nil, fmt.Errorf("error creating deltaIsGreaterThanZero in SolveCubic - %v", err)
 	}
 
 	if deltaCmpToZero > 0 {
 		// One real root, two complex roots
-		C, err := bigarith.Exp(delta, "0.5", delta)
+		C, err := bigarith.ExpFloat(delta, "0.5", 10)
 		if err != nil {
-			return nil, fmt.Errorf("error creating C in SolveCubic")
+			return nil, fmt.Errorf("error creating C in SolveCubic - %v", err)
 		}
-		NegativeBOver2, err := bigarith.Multiply(BOver2, "-1")
+		NegativeBOver2, err := bigarith.Divide(B, "-2")
 		if err != nil {
-			return nil, fmt.Errorf("error creating NegativeBOver2 in SolveCubic")
+			return nil, fmt.Errorf("error creating NegativeBOver2 in SolveCubic - %v", err)
 		}
-		NegativeBOver2PlusC, err := bigarith.Add(NegativeBOver2, C)
+		NegativeBOver2PlusC, err := bigarith.AddFloat(NegativeBOver2, C)
 		if err != nil {
-			return nil, fmt.Errorf("error creating NegativeBOver2PlusC in SolveCubic")
+			return nil, fmt.Errorf("error creating NegativeBOver2PlusC in SolveCubic - %v", err)
 		}
-		u, err := bigarith.Exp(NegativeBOver2PlusC, "0.333333333333", NegativeBOver2PlusC)
+		u, err := bigarith.ExpFloat(NegativeBOver2PlusC, "0.333333333333", 10)
 		if err != nil {
-			return nil, fmt.Errorf("error creating u in SolveCubic")
+			return nil, fmt.Errorf("error creating u in SolveCubic - %v", err)
 		}
-		NegativeBOver2MinusC, err := bigarith.Subtract(NegativeBOver2, C)
+		NegativeBOver2MinusC, err := bigarith.SubtractFloat(NegativeBOver2, C)
 		if err != nil {
-			return nil, fmt.Errorf("error creating NegativeBOver2MinusC in SolveCubic")
+			return nil, fmt.Errorf("error creating NegativeBOver2MinusC in SolveCubic - %v", err)
 		}
-		v, err := bigarith.Exp(NegativeBOver2MinusC, "0.333333333333", NegativeBOver2PlusC)
+		v, err := bigarith.ExpFloat(NegativeBOver2MinusC, "0.333333333333", 10)
 		if err != nil {
-			return nil, fmt.Errorf("error creating v in SolveCubic")
+			return nil, fmt.Errorf("error creating v in SolveCubic - %v", err)
 		}
 
 		root, err := bigarith.Add(u, v)
+		if err != nil {
+			return nil, fmt.Errorf("error adding u and v in SolveCubic - %v", err)
+		}
 		roots = append(roots, root)
 
 	} else if deltaCmpToZero == 0 {
