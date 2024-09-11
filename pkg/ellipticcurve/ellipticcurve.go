@@ -56,12 +56,34 @@ func (ec EllipticCurve) SolveCubic() ([]float64, error) {
 	// TODO: convert this to strings - or big int...?
 	A, _ := ec.a.Float64()
 	B, _ := ec.b.Float64()
-	det := math.Abs(-math.Pow((A/3.0), 3.0) - math.Pow((B/2.0), 2.0))
+	det := -math.Pow((A/3.0), 3.0) - math.Pow((B/2.0), 2.0)
 
+	if det < 0 {
+		fmt.Printf("A: %v\n", A)
+		fmt.Printf("B: %v\n", B)
+		fmt.Printf("det: %v\n", det)
+
+		D := (-B/2.0 + 0i) + (math.Sqrt(-det))
+
+		fmt.Printf("D: %v\n", D)
+
+		cubeRootD := math.Pow(D, 1.0/3.0)
+		x1 := 2.0 * cubeRootD
+		x2 := -cubeRootD
+		x3 := -cubeRootD
+
+		return []float64{x1, x2, x3}, nil
+	}
+
+	fmt.Printf("A: %v\n", A)
+	fmt.Printf("B: %v\n", B)
 	fmt.Printf("det: %v\n", det)
 
 	// Calculate discriminant
-	D := cmplx.Rect(-B/2.0, math.Sqrt(det))
+	D := complex((-B/2.0 + 0i), (math.Sqrt(det)))
+
+	fmt.Printf("D: %v\n", D)
+
 	cubeRootD := cmplx.Pow(D, 1.0/3.0)
 	R := real(cubeRootD)
 	I := imag(cubeRootD)
