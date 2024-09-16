@@ -199,128 +199,130 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 			return nil, fmt.Errorf("error creating x_1 in SolveCubic - %v", err)
 		}
 
-		// x_2 = 2 gamma \cos\left(\frac{\theta}{3} + \frac{2\pi}{3}\right)
-		TwoPi, err := bigarith.MultiplyFloat("2", bigarith.Pi(2048).String())
-		if err != nil {
-			return nil, fmt.Errorf("error creating TwoPi in SolveCubic - %v", err)
-		}
-		TwoPiOver3, err := bigarith.Divide(TwoPi, "3")
-		if err != nil {
-			return nil, fmt.Errorf("error creating TwoPiOver3 in SolveCubic - %v", err)
-		}
-		thetaOver3PlusTwoPiOver3, err := bigarith.AddFloat(thetaOver3, TwoPiOver3)
-		if err != nil {
-			return nil, fmt.Errorf("error creating thetaOver3PlusTwoPiOver3 in SolveCubic - %v", err)
-		}
-		CosThetaOver3PlusTwoPiOver3, err := bigarith.Cos(thetaOver3PlusTwoPiOver3, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating thetaOver3PlusTwoPiOver3 in SolveCubic - %v", err)
-		}
-		// x_3 = 2 gamma \cos\left(\frac{\theta}{3} + \frac{4\pi}{3}\right)
+		roots = append(roots, x_1)
 
-		// theta := math.Acos(-B / 2 * math.Sqrt(27/math.Pow(A, 3)))
-		Twenty7OverACubed, err := bigarith.Divide("27", ACubed)
-		if err != nil {
-			return nil, fmt.Errorf("error creating Twenty7OverACubed in SolveCubic - %v", err)
-		}
-		fmt.Printf("Twenty7OverACubed: %s\n", Twenty7OverACubed)
-		SqrtTwenty7OverACubed, err := bigarith.Sqrt(Twenty7OverACubed, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating SqrtTwenty7OverACubed in SolveCubic - %v", err)
-		}
-		fmt.Printf("SqrtTwenty7OverACubed: %s\n", SqrtTwenty7OverACubed)
-		NegativeBOver2MultipliedBySqrtTwenty7OverACubed, err := bigarith.MultiplyFloat(SqrtTwenty7OverACubed, NegativeBOver2)
-		if err != nil {
-			return nil, fmt.Errorf("error creating NegativeBOver2MultipliedBySqrtTwenty7OverACubed in SolveCubic - %v", err)
-		}
-		fmt.Printf("NegativeBOver2MultipliedBySqrtTwenty7OverACubed: %s\n", NegativeBOver2MultipliedBySqrtTwenty7OverACubed)
-		theta, err := bigarith.Acos(NegativeBOver2MultipliedBySqrtTwenty7OverACubed, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating theta in SolveCubic - %v", err)
-		}
-		fmt.Printf("theta: %s\n", theta)
-		// r := 2 * math.Sqrt(-A/3)
-		MinusAOver3, err := bigarith.Divide(A, "-3")
-		if err != nil {
-			return nil, fmt.Errorf("error creating MinusAOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("MinusAOver3: %s\n", MinusAOver3)
-		SqrtMinusAOver3, err := bigarith.Sqrt(MinusAOver3, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating SqrtMinusAOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("SqrtMinusAOver3: %s\n", SqrtMinusAOver3)
-		r, err := bigarith.MultiplyFloat("2", SqrtMinusAOver3)
-		if err != nil {
-			return nil, fmt.Errorf("error creating r in SolveCubic - %v", err)
-		}
-		fmt.Printf("r: %s\n", r)
-		// root1 := r * math.Cos(theta/3)
-		ThetaOver3, err := bigarith.Divide(theta, "3")
-		if err != nil {
-			return nil, fmt.Errorf("error creating ThetaOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("ThetaOver3: %s\n", ThetaOver3)
-		CosThetaOver3, err := bigarith.Cos(ThetaOver3, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating CosThetaOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("CosThetaOver3: %s\n", CosThetaOver3)
-		root1, err := bigarith.MultiplyFloat(r, CosThetaOver3)
-		// root2 := r * math.Cos((theta+2*math.Pi)/3)
-		TwoPi, err := bigarith.MultiplyFloat("2", bigarith.Pi(2048).String())
-		if err != nil {
-			return nil, fmt.Errorf("error creating TwoPi in SolveCubic - %v", err)
-		}
-		fmt.Printf("TwoPi: %s\n", TwoPi)
-		ThetaPlusTwoPi, err := bigarith.AddFloat(theta, TwoPi)
-		if err != nil {
-			return nil, fmt.Errorf("error creating ThetaPlusTwoPi in SolveCubic - %v", err)
-		}
-		fmt.Printf("ThetaPlusTwoPi: %s\n", ThetaPlusTwoPi)
-		ThetaPlusTwoPiOver3, err := bigarith.Divide(ThetaPlusTwoPi, "3")
-		if err != nil {
-			return nil, fmt.Errorf("error creating ThetaPlusTwoPiOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("ThetaPlusTwoPiOver3: %s\n", ThetaPlusTwoPiOver3)
-		CosThetaPlusTwoPiOver3, err := bigarith.Cos(ThetaPlusTwoPiOver3, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating CosThetaPlusTwoPiOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("CosThetaPlusTwoPiOver3: %s\n", CosThetaPlusTwoPiOver3)
-		root2, err := bigarith.MultiplyFloat(r, CosThetaPlusTwoPiOver3)
-		if err != nil {
-			return nil, fmt.Errorf("error creating root2 in SolveCubic - %v", err)
-		}
-		fmt.Printf("root2: %s\n", root2)
-		// root3 := r * math.Cos((theta+4*math.Pi)/3)
-		FourPi, err := bigarith.MultiplyFloat("4", bigarith.Pi(2048).String())
-		if err != nil {
-			return nil, fmt.Errorf("error creating FourPi in SolveCubic - %v", err)
-		}
-		fmt.Printf("FourPi: %s\n", FourPi)
-		ThetaPlusFourPi, err := bigarith.AddFloat(theta, FourPi)
-		if err != nil {
-			return nil, fmt.Errorf("error creating ThetaPlusFourPi in SolveCubic - %v", err)
-		}
-		fmt.Printf("ThetaPlusFourPi: %s\n", ThetaPlusFourPi)
-		ThetaPlusFourPiOver3, err := bigarith.Divide(ThetaPlusFourPi, "3")
-		if err != nil {
-			return nil, fmt.Errorf("error creating ThetaPlusFourPiOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("ThetaPlusFourPiOver3: %s\n", ThetaPlusFourPiOver3)
-		CosThetaPlusFourPiOver3, err := bigarith.Cos(ThetaPlusFourPiOver3, 2048)
-		if err != nil {
-			return nil, fmt.Errorf("error creating CosThetaPlusFourPiOver3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("CosThetaPlusFourPiOver3: %s\n", CosThetaPlusFourPiOver3)
-		root3, err := bigarith.MultiplyFloat(r, CosThetaPlusFourPiOver3)
-		if err != nil {
-			return nil, fmt.Errorf("error creating root3 in SolveCubic - %v", err)
-		}
-		fmt.Printf("root3: %s\n", root3)
+		// // x_2 = 2 gamma \cos\left(\frac{\theta}{3} + \frac{2\pi}{3}\right)
+		// TwoPi, err := bigarith.MultiplyFloat("2", bigarith.Pi(2048).String())
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating TwoPi in SolveCubic - %v", err)
+		// }
+		// TwoPiOver3, err := bigarith.Divide(TwoPi, "3")
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating TwoPiOver3 in SolveCubic - %v", err)
+		// }
+		// thetaOver3PlusTwoPiOver3, err := bigarith.AddFloat(thetaOver3, TwoPiOver3)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating thetaOver3PlusTwoPiOver3 in SolveCubic - %v", err)
+		// }
+		// CosThetaOver3PlusTwoPiOver3, err := bigarith.Cos(thetaOver3PlusTwoPiOver3, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating thetaOver3PlusTwoPiOver3 in SolveCubic - %v", err)
+		// }
+		// // x_3 = 2 gamma \cos\left(\frac{\theta}{3} + \frac{4\pi}{3}\right)
 
-		roots = append(roots, root1, root2, root3)
+		// // theta := math.Acos(-B / 2 * math.Sqrt(27/math.Pow(A, 3)))
+		// Twenty7OverACubed, err := bigarith.Divide("27", ACubed)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating Twenty7OverACubed in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("Twenty7OverACubed: %s\n", Twenty7OverACubed)
+		// SqrtTwenty7OverACubed, err := bigarith.Sqrt(Twenty7OverACubed, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating SqrtTwenty7OverACubed in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("SqrtTwenty7OverACubed: %s\n", SqrtTwenty7OverACubed)
+		// NegativeBOver2MultipliedBySqrtTwenty7OverACubed, err := bigarith.MultiplyFloat(SqrtTwenty7OverACubed, NegativeBOver2)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating NegativeBOver2MultipliedBySqrtTwenty7OverACubed in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("NegativeBOver2MultipliedBySqrtTwenty7OverACubed: %s\n", NegativeBOver2MultipliedBySqrtTwenty7OverACubed)
+		// theta, err := bigarith.Acos(NegativeBOver2MultipliedBySqrtTwenty7OverACubed, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating theta in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("theta: %s\n", theta)
+		// // r := 2 * math.Sqrt(-A/3)
+		// MinusAOver3, err := bigarith.Divide(A, "-3")
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating MinusAOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("MinusAOver3: %s\n", MinusAOver3)
+		// SqrtMinusAOver3, err := bigarith.Sqrt(MinusAOver3, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating SqrtMinusAOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("SqrtMinusAOver3: %s\n", SqrtMinusAOver3)
+		// r, err := bigarith.MultiplyFloat("2", SqrtMinusAOver3)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating r in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("r: %s\n", r)
+		// // root1 := r * math.Cos(theta/3)
+		// ThetaOver3, err := bigarith.Divide(theta, "3")
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating ThetaOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("ThetaOver3: %s\n", ThetaOver3)
+		// CosThetaOver3, err := bigarith.Cos(ThetaOver3, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating CosThetaOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("CosThetaOver3: %s\n", CosThetaOver3)
+		// root1, err := bigarith.MultiplyFloat(r, CosThetaOver3)
+		// // root2 := r * math.Cos((theta+2*math.Pi)/3)
+		// TwoPi, err := bigarith.MultiplyFloat("2", bigarith.Pi(2048).String())
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating TwoPi in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("TwoPi: %s\n", TwoPi)
+		// ThetaPlusTwoPi, err := bigarith.AddFloat(theta, TwoPi)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating ThetaPlusTwoPi in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("ThetaPlusTwoPi: %s\n", ThetaPlusTwoPi)
+		// ThetaPlusTwoPiOver3, err := bigarith.Divide(ThetaPlusTwoPi, "3")
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating ThetaPlusTwoPiOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("ThetaPlusTwoPiOver3: %s\n", ThetaPlusTwoPiOver3)
+		// CosThetaPlusTwoPiOver3, err := bigarith.Cos(ThetaPlusTwoPiOver3, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating CosThetaPlusTwoPiOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("CosThetaPlusTwoPiOver3: %s\n", CosThetaPlusTwoPiOver3)
+		// root2, err := bigarith.MultiplyFloat(r, CosThetaPlusTwoPiOver3)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating root2 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("root2: %s\n", root2)
+		// // root3 := r * math.Cos((theta+4*math.Pi)/3)
+		// FourPi, err := bigarith.MultiplyFloat("4", bigarith.Pi(2048).String())
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating FourPi in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("FourPi: %s\n", FourPi)
+		// ThetaPlusFourPi, err := bigarith.AddFloat(theta, FourPi)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating ThetaPlusFourPi in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("ThetaPlusFourPi: %s\n", ThetaPlusFourPi)
+		// ThetaPlusFourPiOver3, err := bigarith.Divide(ThetaPlusFourPi, "3")
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating ThetaPlusFourPiOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("ThetaPlusFourPiOver3: %s\n", ThetaPlusFourPiOver3)
+		// CosThetaPlusFourPiOver3, err := bigarith.Cos(ThetaPlusFourPiOver3, 2048)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating CosThetaPlusFourPiOver3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("CosThetaPlusFourPiOver3: %s\n", CosThetaPlusFourPiOver3)
+		// root3, err := bigarith.MultiplyFloat(r, CosThetaPlusFourPiOver3)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("error creating root3 in SolveCubic - %v", err)
+		// }
+		// fmt.Printf("root3: %s\n", root3)
+
+		// roots = append(roots, root1, root2, root3)
 	}
 
 	return roots, err
