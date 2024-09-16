@@ -44,3 +44,6 @@ coverage.html
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# binary files don't need to go in repo
+bin/*
