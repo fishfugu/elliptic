@@ -47,3 +47,6 @@ coverage.html
 
 # binary files don't need to go in repo
 bin/*
+
+# ignore scripts
+ignorescripts/*

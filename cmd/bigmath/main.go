@@ -7,43 +7,24 @@ import (
 )
 
 func main() {
-	result, err := bigarith.Add("12345678901234567890", "98765432109876543210")
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Addition Result:", result)
-	}
+	// Perform addition
+	addResult := bigarith.NewInt("12345678901234567890").Plus(bigarith.NewInt("98765432109876543210").Val())
+	fmt.Println("Addition Result:", addResult.Val())
 
-	result, err = bigarith.Multiply("12345678901234567890", "98765432109876543210")
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Multiplication Result:", result)
-	}
-	multiplyResult := result
+	// Perform multiplication
+	multiplyResult := bigarith.NewInt("12345678901234567890").Times(bigarith.NewInt("98765432109876543210").Val())
+	fmt.Println("Multiplication Result:", multiplyResult.Val())
 
-	result, err = bigarith.Subtract("12345678901234567890", "98765432109876543210")
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Subtraction Result:", result)
-	}
+	// Perform subtraction
+	subtractResult := bigarith.NewInt("12345678901234567890").Minus(bigarith.NewInt("98765432109876543210").Val())
+	fmt.Println("Subtraction Result:", subtractResult.Val())
 
-	maxPrime, err := bigarith.Multiply(multiplyResult, "2")
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	prime, err := bigarith.FindPrime(multiplyResult, maxPrime)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	fmt.Println("Prime found:", prime)
+	// Find the prime within the range of [multiplyResult, multiplyResult * 2]
+	maxPrime := multiplyResult.Times("2")
+	prime := multiplyResult.FindPrime(maxPrime.Val())
+	fmt.Println("Prime found:", prime.Val())
 
-	result, err = bigarith.DivideInField("12345678901234567890", "98765432109876543210", prime)
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Division In Field Result:", result)
-	}
+	// Perform division in the field defined by the prime modulus
+	divideResult := bigarith.NewInt("98765432109876543210").DivideInField("12345678901234567890", prime.Val())
+	fmt.Println("Division In Field Result:", divideResult.Val())
 }

@@ -1,11 +1,13 @@
 package main
 
 import (
+	ba "elliptic/pkg/bigarith"
 	"elliptic/pkg/ellipticcurve"
 	"elliptic/pkg/finiteintfield"
 	"fmt"
 	"image/color"
 	"math/big"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,10 +18,10 @@ import (
 
 func main() {
 	myApp := app.New()
-	myWindow := myApp.NewWindow("Elliptic Curve Visualization in Finite Field")
+	myWindow := myApp.NewWindow("Elliptic Curve Visualisation in Finite Field")
 
 	// Initialise curve parameters and create curve
-	a, b, p := big.NewInt(1), big.NewInt(1), big.NewInt(13)
+	a, b, p := ba.NewInt("1"), ba.NewInt("1"), ba.NewInt("13")
 	curve := ellipticcurve.NewFiniteFieldEC(a, b, p)
 
 	// Calculate points on the curve
@@ -39,8 +41,12 @@ func main() {
 	for _, point := range points {
 		x, _ := new(big.Int).SetString(point[0], 10)
 		y, _ := new(big.Int).SetString(point[1], 10)
-		xCanvas := float32(x.Int64()) * (float32(w) / float32(p.Int64()))
-		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(p.Int64()))) // Flipping y to have the origin at the bottom left
+		// Convert bigarith.Int to int
+		// TODO: change function to handle string input for better compatibility
+		// TODO: handle this error
+		pInt, _ := strconv.Atoi(p.Val())
+		xCanvas := float32(x.Int64()) * (float32(w) / float32(int64(pInt)))
+		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(int64(pInt)))) // Flipping y to have the origin at the bottom left
 		fynePoint := canvas.NewCircle(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
 		fynePoint.Resize(fyne.NewSize(5, 5))
 		fynePoint.Move(fyne.NewPos(xCanvas, yCanvas))

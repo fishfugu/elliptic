@@ -1,12 +1,13 @@
 package main
 
 import (
+	ba "elliptic/pkg/bigarith"
 	"elliptic/pkg/ellipticcurve"
 	"elliptic/pkg/finiteintfield"
 	"flag"
 	"fmt"
-	"math/big"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -23,12 +24,12 @@ func main() {
 	p := getInput("P", *pFlag)
 
 	// Convert inputs to big.Int
-	aInt, _ := new(big.Int).SetString(a, 10)
-	bInt, _ := new(big.Int).SetString(b, 10)
-	pInt, _ := new(big.Int).SetString(p, 10)
+	aBigInt := ba.NewInt(a)
+	bBigInt := ba.NewInt(b)
+	pBigInt := ba.NewInt(p)
 
 	// Create the elliptic curve over the finite field
-	curve := ellipticcurve.NewFiniteFieldEC(aInt, bInt, pInt)
+	curve := ellipticcurve.NewFiniteFieldEC(aBigInt, bBigInt, pBigInt)
 
 	// Calculate points on the curve
 	points, err := finiteintfield.CalculatePoints(*curve)
@@ -40,9 +41,13 @@ func main() {
 	// Output points
 	fmt.Println(finiteintfield.FormatPoints(points))
 
-	// Visualize points if the flag is set
+	// Visualise points if the flag is set
 	if *visualiseFlag {
-		visualisation := finiteintfield.VisualisePoints(points, int(pInt.Int64()))
+		// Convert bigarith.Int to int
+		// TODO: change function to handle string input for better compatibility
+		// TODO: handle this error
+		pInt, _ := strconv.Atoi(pBigInt.Val())
+		visualisation := finiteintfield.VisualisePoints(points, pInt)
 		fmt.Println(visualisation)
 	}
 

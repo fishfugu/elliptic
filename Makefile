@@ -1,7 +1,7 @@
 ##@ BUILD
 
 .PHONY: build-all
-build-all: build-bigmath build-finitefield build-ecviz build-cli	## Build the project - all necessary components
+build-all: build-bigmath build-finitefield build-ecvis build-cli	## Build the project - all necessary components
 
 .PHONY: build-bigmath
 build-bigmath:	## Build bigmath executable
@@ -15,13 +15,13 @@ build-finitefield:	## Build finitefield executable
 	GOOS=darwin GOARCH=amd64 go build -o bin/finitefield ./cmd/finitefield
 	@echo "Build of finitefield complete."
 
-.PHONY: build-ecviz
-build-ecviz:	## Build Elliptic Curve Data Viz Tool
+.PHONY: build-ecvis
+build-ecvis:	## Build Elliptic Curve Data Vis Tool
 # TODO: Scaling / Translation: Adjust mapping of mathematical coords to screen coords to ensure curve fits in window / maintains aspect ratio
 # TODO: Interactive: Zooming / panning to explore parts of curve
 # Labeling: Optionally, labels / different colors to highlight properties / points on curve, such as inflection, zeros, etc.
-	@echo "Building Elliptic Curve Data Viz Tool..."
-	GOOS=darwin GOARCH=amd64 go build -o bin/ecviz ./cmd/ecviz
+	@echo "Building Elliptic Curve Data Vis Tool..."
+	GOOS=darwin GOARCH=amd64 go build -o bin/ecvis ./cmd/ecvis
 	@echo "Build finished"
 
 .PHONY: build-cli
@@ -54,16 +54,16 @@ run-finitefield: build-finitefield test-quiet	## Run finitefield binary - ensuri
 	@echo
 	@echo "Run of finitefield complete."
 
-.PHONY: run-ecviz
-run-ecviz: build-ecviz test-quiet	## Run Elliptic Curve Data Viz Tool - ensuring latest build is executed - running tests first
+.PHONY: run-ecvis
+run-ecvis: build-ecvis test-quiet	## Run Elliptic Curve Data Vis Tool - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
-	@echo "✓✓✓✓✓ -- EC Viz Tool built, and tested - continuing on to run..."
+	@echo "✓✓✓✓✓ -- EC Vis Tool built, and tested - continuing on to run..."
 	@echo "****************************************************************"
 	@echo
-	./bin/ecviz &
+	./bin/ecvis &
 	@echo
-	@echo "Elliptic Curve Data Viz Tool running"
+	@echo "Elliptic Curve Data Vis Tool running"
 
 .PHONY: run-cli
 run-cli: build-cli test-quiet	## Run Elliptic Curve CLI - ensuring latest build is executed - running tests first
@@ -93,7 +93,7 @@ clean:	## Remove binaries and any temporary files
 	@echo "Clean complete."
 
 .PHONY: test-drive
-test-drive: help build-all run-bigmath run-finitefield run-ecviz test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
+test-drive: help build-all run-bigmath run-finitefield run-ecvis test clean	## Run through all (appropriate) make file commands - just to take it for a test drive (check I haven't done stupidity)
 	@echo "******************************************************************"
 	@echo "✓✓✓✓✓ -- Seem to have got to end of test-dive without fatal errors"
 	@echo "******************************************************************"

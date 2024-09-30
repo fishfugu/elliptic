@@ -10,7 +10,7 @@ import (
 // 		return nil, fmt.Errorf("the coefficient 'a' must not be zero for a cubic equation")
 // 	}
 
-// 	// Convert to normalized cubic t^3 + pt + q = 0
+// 	// Convert to normalised cubic t^3 + pt + q = 0
 // 	p := (3*a*c - b*b) / (3 * a * a)
 // 	q := (2*b*b*b - 9*a*b*c + 27*a*a*d) / (27 * a * a * a)
 
@@ -44,7 +44,7 @@ import (
 // 		return nil, fmt.Errorf("the coefficient 'a' must not be zero for a cubic equation")
 // 	}
 
-// 	// Convert to normalized cubic t^3 + pt + q = 0
+// 	// Convert to normalised cubic t^3 + pt + q = 0
 
 // 	// Create p := (3*a*c - b*b) / (3 * a * a)
 // 	acBigInt, err := bigarith.Multiply(a, c)

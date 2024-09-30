@@ -59,10 +59,10 @@ make run-bigmath
 make run-finitefield
 ```
 
-**_ ecviz _**
+**_ ecvis _**
 
 ```
-make run-ecviz
+make run-ecvis
 ```
 
 **_ ellipticcurvecli _**
@@ -95,7 +95,7 @@ make test-drive
 ## Text Visualisation Example
 
 ```
-2D Plane Visualization with Cartesian Axes, Reflection Line, and Scale:
+2D Plane Visualisation with Cartesian Axes, Reflection Line, and Scale:
 |                                                                                        43
 |                                                   *
 |                                             *

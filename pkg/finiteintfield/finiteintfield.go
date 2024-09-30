@@ -14,31 +14,25 @@ func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]string, error) {
 
 	A, B, p := FFEC.GetDetails()
 
-	for x := "0"; ; {
+	// set up y^2 lookup
+	ySquaredLookup := make(map[bigarith.Int][]bigarith.Int)
+	for y := bigarith.NewInt("0"); y.Compare(p.Val()) < 0; y = y.Plus("1") {
+		ySquared := y.ToThePowerOf("2", p.Val())
+		ySquaredLookup[ySquared] = append(ySquaredLookup[ySquared], y)
+	}
+
+	for x := bigarith.NewInt("0"); x.Compare(p.Val()) < 0; x = x.Plus("1") {
 		// Calculate rhs: x^3 + Ax + B
-		x3, _ := bigarith.Exp(x, "3", p.String()) // x^3 mod p
-		Ax, _ := bigarith.Multiply(A.String(), x)
-		Ax, _ = bigarith.Mod(Ax, p.String()) // (A*x) mod p
-		rhs, _ := bigarith.Add(x3, Ax)
-		rhs, _ = bigarith.Add(rhs, B.String())
-		rhs, _ = bigarith.Mod(rhs, p.String()) // (x^3 + Ax + B) mod p
+		xCubed := x.ToThePowerOf("3", p.Val()).Mod(p.Val())     // x^3 mod p
+		Ax := A.Times(x.Val()).Mod(p.Val())                     // Ax mod p
+		rhs := xCubed.Plus(Ax.Val()).Plus(B.Val()).Mod(p.Val()) // (x^3 + Ax + B) mod p
 
 		// Check for y^2 = rhs
-		for y := "0"; ; {
-			y2, _ := bigarith.Exp(y, "2", p.String()) // y^2 mod p
-			if cmp, _ := bigarith.Cmp(y2, rhs); cmp == 0 {
-				points = append(points, [2]string{x, y})
+		if yList, ok := ySquaredLookup[rhs]; ok {
+			// yList contains list of y values for which y^2 = rhs
+			for _, y := range yList {
+				points = append(points, [2]string{x.Val(), y.Val()})
 			}
-
-			y, _ = bigarith.Add(y, "1")
-			if cmp, _ := bigarith.Cmp(y, p.String()); cmp >= 0 {
-				break
-			}
-		}
-
-		x, _ = bigarith.Add(x, "1")
-		if cmp, _ := bigarith.Cmp(x, p.String()); cmp >= 0 {
-			break
 		}
 	}
 
@@ -160,7 +154,7 @@ func VisualisePoints(points [][2]string, p int) string {
 	}
 
 	// Construct the visual output
-	result := "\n2D Plane Visualization with Cartesian Axes, Reflection Line, and Scale:\n"
+	result := "\n2D Plane Visualisation with Cartesian Axes, Reflection Line, and Scale:\n"
 	for i, line := range plane {
 		for j, char := range line {
 			result += string(char) + " "
@@ -183,7 +177,3 @@ func VisualisePoints(points [][2]string, p int) string {
 
 	return result
 }
-
-// func FindY(FFEC ellipticcurve.FiniteFieldEC) (float64, error) {
-
-// }

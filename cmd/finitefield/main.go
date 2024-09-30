@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"math/big"
+	"strconv"
 
+	ba "elliptic/pkg/bigarith"
 	"elliptic/pkg/ellipticcurve"
 	"elliptic/pkg/finiteintfield"
 )
@@ -12,15 +13,15 @@ const divider = "==========================="
 
 func main() {
 	curves := []struct {
-		a, b, p *big.Int
+		a, b, p ba.Int
 	}{
-		{big.NewInt(1), big.NewInt(-1), big.NewInt(17)},
-		{big.NewInt(1), big.NewInt(1), big.NewInt(13)},
-		{big.NewInt(2), big.NewInt(3), big.NewInt(43)},
+		{ba.NewInt("1"), ba.NewInt("-1"), ba.NewInt("17")},
+		{ba.NewInt("1"), ba.NewInt("1"), ba.NewInt("13")},
+		{ba.NewInt("2"), ba.NewInt("3"), ba.NewInt("43")},
 	}
 
 	for _, curve := range curves {
-		fmt.Printf("Elliptic Curve: y^2 = x^3 + %sx + %s\nDefined in a finite field modulo %s\n%s\n", curve.a.String(), curve.b.String(), curve.p.String(), divider)
+		fmt.Printf("Elliptic Curve: y^2 = x^3 + %sx + %s\nDefined in a finite field modulo %s\n%s\n", curve.a.Val(), curve.b.Val(), curve.p.Val(), divider)
 
 		eCurve := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
 
@@ -34,9 +35,11 @@ func main() {
 		stringPoints := finiteintfield.FormatPoints(points)
 		fmt.Println(stringPoints)
 
-		// Convert big.Int to int
+		// Convert bigarith.Int to int
 		// TODO: change function to handle string input for better compatibility
-		visualisation := finiteintfield.VisualisePoints(points, int(curve.p.Int64()))
+		// TODO: handle this error
+		pInt, _ := strconv.Atoi(curve.p.Val())
+		visualisation := finiteintfield.VisualisePoints(points, pInt)
 		fmt.Println(visualisation)
 	}
 }
