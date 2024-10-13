@@ -3,8 +3,23 @@ package bigarith
 import (
 	"fmt"
 	"math/big"
-	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
+
+// min value
+const numberOfDecimalPoints = int(500) // from 48 ... 505 - eveything else seems to error
+const precision = uint(numberOfDecimalPoints * 17 / 5)
+
+func (f Float) truncateToMaxNumOfDecimalPoints() Float {
+	// NB: for now - assume max num of decimal points we want is 2 less than standard
+	// max precision being used... because the last 2 decimal points is where we
+	// start to see the rounding errors in loops etc.
+	// log_2(10) approx. 3.321928094887362 < 3.322
+	// so for 512 decimal places let's say 512 * 3.322 = 1700.84 < 1800
+	bigFloatF, _ := new(big.Float).SetPrec(precision).SetString(f.Val())
+	return NewFloat(bigFloatF.Text('f', numberOfDecimalPoints))
+}
 
 // Float is a bigarith type for Floating Point Arithmetic
 type Float struct {
@@ -46,7 +61,10 @@ func (f Float) set(a string) Float {
 // by getting a text representation from a big.Float object
 // and returns a new Float with the updated value
 func (f Float) SetBigFloat(a big.Float) Float {
-	return f.set(a.Text('f', 2048))
+	// number of dec points after the decimial point ("prec") is twice as many digits as needed to write out the integer part
+	// aFloat, _ := a.Float64()
+	// prec := (math.Log(aFloat) + 10.0) * 2
+	return f.set(a.Text('f', numberOfDecimalPoints*2)) // this seems to need to be higher
 }
 
 // Neg returns the negated value of the current floating point number as a new bigarith.Float
@@ -86,9 +104,12 @@ func (f Float) SquareRoot() Float {
 
 func (f Float) NthRoot(n string) Float {
 	oneOverN := NewFloat("1").DividedBy(n)
+	logrus.Debugf("Calculating nth root of %s, n = %s: %%s", f.Val(), n)
 	if f.Compare("0") < 0 {
+		logrus.Debugf("Result %s", f.Neg().ToThePowerOf(oneOverN.Val()).Neg().Val())
 		return f.Neg().ToThePowerOf(oneOverN.Val()).Neg()
 	} else {
+		logrus.Debugf("Result %s", f.ToThePowerOf(oneOverN.Val()).Val())
 		return f.ToThePowerOf(oneOverN.Val())
 	}
 }
@@ -101,162 +122,239 @@ func (f Float) Mod(a string) Float {
 	return f.Minus(NewFloat(qInt.String()).Times(a).Val())
 }
 
+func (f Float) Mod2Pi() Float {
+	// Use a more precise Pi value for accurate modulo calculations
+	// Perform x mod 2*Pi
+	return f.Mod(Pi().Times("2").Val())
+}
+
 // ToThePowerOf raises the current floating point number to the power of another floating point number
 // and returns the result as a new bigarith.Float
 func (f Float) ToThePowerOf(a string) Float {
-	if f.Compare("0") <= 0 {
+	if f.Compare("0") == 0 {
+		return NewFloat("0")
+	}
+	if f.Compare("0") < 0 {
 		panic(fmt.Sprintf("base value for Float.ToThePowerOf cannot be negative - base = %s - exponent = %s", f.Val(), a))
 	}
 	logBase := logNewton(bigFloat(f.Val()))
 	expLogBase := new(big.Float).Mul(bigFloat(a), logBase)
-	return f.SetBigFloat(*expSeries(expLogBase))
+	// problem is I don't know how accurate you make this ToThePowerOf function...
+	// TODO: review this... how does it interact with the for loop counts in logNewton and expSeries
+	return f.set(expSeries(expLogBase).Text('f', numberOfDecimalPoints))
 }
 
 // Sin calculates the sine of the current floating point number (in radians) using the Taylor series expansion
 // and returns the result as a new bigarith.Float
 func (f Float) Sin() Float {
-	f = f.Mod2Pi() // Modulo 2π to normalise the input
-	result := NewFloat("0")
-	aSquared := NewFloat(f.Val()).Times(f.Val()) // Square of the current value
-	term := NewFloat(f.Val())                    // First term is just the current value
-	factorial := NewFloat("1")                   // Initialise factorial for Taylor expansion
-	sign := NewFloat("1")                        // Initialise sign for alternating series
-
-	for i := 1; i < 100; i++ {
-		if i > 1 {
-			// Update factorial to (2*i - 1) * (2*i)
-			factorial = factorial.Times(strconv.Itoa(2*i - 1)).Times(strconv.Itoa(2 * i))
-			// Calculate the next term in the series
-			term = term.Times(aSquared.Val()).DividedBy(factorial.Val()).Times(sign.Val())
-		}
-		// Add the term to the result
-		result = result.Plus(term.Val())
+	// https://en.wikipedia.org/wiki/Trigonometric_functions#Simple_algebraic_values
+	// https://en.wikipedia.org/wiki/Trigonometric_functions#Power_series_expansion
+	logrus.Debugf("Calculating Cos for: %s", f.Val())
+	// take input back to === mod 2 pi
+	f = f.Mod(Pi().Times("2").Val())
+	if f.Compare("0") == 0 {
+		return NewFloat("0")
+	}
+	if f.Compare(Pi().DividedBy("6").Val()) == 0 {
+		return NewFloat(NewFloat("1").DividedBy("2").Val())
+	}
+	if f.Compare(Pi().DividedBy("2").Val()) == 0 {
+		return NewFloat("1")
+	}
+	sinEstimate := NewFloat("0")
+	previousSinEstimate := sinEstimate.Plus("1")
+	// setup numerator
+	numerator := NewFloat(f.Val())
+	// setup denominator
+	multiple := NewFloat("1")
+	denominator := NewFloat("1")
+	// setup the sign
+	sign := NewFloat("1")
+	// recalc term
+	term := numerator.DividedBy(denominator.Val())
+	for sinEstimate.truncateToMaxNumOfDecimalPoints().Compare(previousSinEstimate.truncateToMaxNumOfDecimalPoints().Val()) != 0 {
+		previousSinEstimate = sinEstimate
+		sinEstimate = sinEstimate.Plus(term.Val())
+		logrus.Debugf("sinEstimate: %s", sinEstimate.Val())
+		// recalc values
+		// recalc numerator
+		numerator = numerator.Times(f.Val()).Times(f.Val())
+		logrus.Debugf("numerator: %s", numerator.Val())
+		// recalc denominator
+		multiple = multiple.Plus("1")
+		logrus.Debugf("multiple: %s", multiple.Val())
+		denominator = denominator.Times(multiple.Val())
+		logrus.Debugf("denominator: %s", denominator.Val())
+		multiple = multiple.Plus("1")
+		logrus.Debugf("multiple: %s", multiple.Val())
+		denominator = denominator.Times(multiple.Val())
+		logrus.Debugf("denominator: %s", denominator.Val())
 		// Alternate the sign (positive/negative)
 		sign = sign.Neg()
+		logrus.Debugf("sign: %s", sign.Val())
+		// recalc term
+		term = numerator.DividedBy(denominator.Val()).Times(sign.Val())
+		logrus.Debugf("Latest term: %s", term.Val())
 	}
-	// Return the final sine value
-	return f.set(result.Val())
+
+	sinEstimate = sinEstimate.Plus(term.Val()) // one last time... even after it hasn't changed
+	return sinEstimate.truncateToMaxNumOfDecimalPoints()
 }
 
 // Cos calculates the cosine of the current floating point number (in radians) using the Taylor series expansion
 // and returns the result as a new bigarith.Float
 func (f Float) Cos() Float {
-	f = f.Mod2Pi()                               // Modulo 2π to normalise the input
-	result := NewFloat("1")                      // First term in the Taylor series for cos is 1
-	aSquared := NewFloat(f.Val()).Times(f.Val()) // Square of the current value
-	term := NewFloat("1")                        // Initialise the first term as 1
-	factorial := NewFloat("1")                   // Initialise factorial for Taylor expansion
-	sign := NewFloat("1")                        // Initialise sign for alternating series
-
-	for i := 1; i < 100; i++ {
-		// Update factorial for the current term
-		factorial = factorial.Times(strconv.Itoa(2*i - 1)).Times(strconv.Itoa(2 * i))
-		// Calculate the next term in the series
-		term = term.Times(aSquared.Val()).DividedBy(factorial.Val()).Times(sign.Val())
-		// Add the term to the result
-		result = result.Plus(term.Val())
+	// https://en.wikipedia.org/wiki/Trigonometric_functions#Simple_algebraic_values
+	// https://en.wikipedia.org/wiki/Trigonometric_functions#Power_series_expansion
+	logrus.Debugf("Calculating Cos for: %s", f.Val())
+	// take input back to === mod 2 pi
+	f = f.Mod(Pi().Times("2").Val())
+	if f.Compare("0") == 0 {
+		return NewFloat("1")
+	}
+	if f.Compare(Pi().DividedBy("3").Val()) == 0 {
+		return NewFloat(NewFloat("1").DividedBy("2").Val())
+	}
+	if f.Compare(Pi().DividedBy("2").Val()) == 0 {
+		return NewFloat(NewFloat("0").Val())
+	}
+	cosEstimate := NewFloat("0")
+	previousCosEstimate := cosEstimate.Plus("-1")
+	// setup numerator
+	numerator := NewFloat("1")
+	logrus.Debugf("original numerator: %s", numerator.Val())
+	// setup denominator
+	multiple := NewFloat("0")
+	denominator := NewFloat("1")
+	logrus.Debugf("original denominator: %s", denominator.Val())
+	// setup the sign
+	sign := NewFloat("1")
+	// recalc term
+	term := numerator.DividedBy(denominator.Val())
+	logrus.Debugf("original term: %s", term.Val())
+	for cosEstimate.truncateToMaxNumOfDecimalPoints().Compare(previousCosEstimate.truncateToMaxNumOfDecimalPoints().Val()) != 0 {
+		previousCosEstimate = cosEstimate
+		cosEstimate = cosEstimate.Plus(term.Val())
+		logrus.Debugf("cosEstimate: %s", cosEstimate.Val())
+		// recalc values
+		// recalc numerator
+		numerator = numerator.Times(f.Val()).Times(f.Val())
+		logrus.Debugf("numerator: %s", numerator.Val())
+		// recalc denominator
+		multiple = multiple.Plus("1")
+		logrus.Debugf("multiple: %s", multiple.Val())
+		denominator = denominator.Times(multiple.Val())
+		logrus.Debugf("denominator: %s", denominator.Val())
+		multiple = multiple.Plus("1")
+		logrus.Debugf("multiple: %s", multiple.Val())
+		denominator = denominator.Times(multiple.Val())
+		logrus.Debugf("denominator: %s", denominator.Val())
 		// Alternate the sign (positive/negative)
 		sign = sign.Neg()
+		logrus.Debugf("sign: %s", sign.Val())
+		// recalc term
+		term = numerator.DividedBy(denominator.Val()).Times(sign.Val())
+		logrus.Debugf("Latest term: %s\n", term.Val())
 	}
-	// Return the final cosine value
-	return f.set(result.Val())
+
+	cosEstimate = cosEstimate.Plus(term.Val()) // one last time... even after it hasn't changed
+	return cosEstimate.truncateToMaxNumOfDecimalPoints()
 }
 
 // ArcCos calculates the inverse cosine (arccos) of the current floating point number
 // and returns the result as a new bigarith.Float
 func (f Float) ArcCos() Float {
-	// Check if the input is within the valid range [-1, 1]
-	if f.Compare("-1") < 0 || f.Compare("1") > 0 {
-		panic(fmt.Sprintf("Input for ArcCos must be in the range [-1, 1]. Got: %s", f.Val()))
+	// https://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Relationships_between_trigonometric_functions_and_inverse_trigonometric_functions
+	// ArcCos = ArcTan(sqrt{1 - x^2} / x)
+	if f.Compare("1") > 0 || f.Compare("-1") < 0 {
+		panic(fmt.Sprintf("ArcCos only defined for -1 <= x <= 1. Value given: %s", f.Val()))
 	}
-
-	// ArcCos(x) = Pi/2 - ArcSin(x)
-	arcSinResult := f.ArcSin()
-	piOver2 := Pi().DividedBy("2")
-
-	return piOver2.Minus(arcSinResult.Val())
+	if f.Compare("1") == 0 {
+		return NewFloat("0")
+	}
+	if f.Compare("0") == 0 {
+		return NewFloat(Pi().DividedBy("2").truncateToMaxNumOfDecimalPoints().Val())
+	}
+	if f.Compare("-1") == 0 {
+		return NewFloat(Pi().truncateToMaxNumOfDecimalPoints().Val())
+	}
+	xSquared := NewFloat(f.Val()).Times(f.Val())
+	sqrt1MinusXSquared := NewFloat("1").Minus(xSquared.Val()).SquareRoot()
+	result := NewFloat(sqrt1MinusXSquared.Val()).DividedBy(f.Val()).ArcTan()
+	if result.Compare("0") < 0 {
+		result = result.Plus(Pi().Val())
+	}
+	return result.truncateToMaxNumOfDecimalPoints()
 }
 
 // ArcSin calculates the inverse sine (arcsin) of the current floating point number
 // and returns the result as a new bigarith.Float
 func (f Float) ArcSin() Float {
-	// Check if the input is within the valid range [-1, 1]
-	if f.Compare("-1") < 0 || f.Compare("1") > 0 {
-		panic(fmt.Sprintf("Input for ArcSin must be in the range [-1, 1]. Got: %s", f.Val()))
+	// https://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Relationships_between_trigonometric_functions_and_inverse_trigonometric_functions
+	// ArcSin = ArcTan(x / sqrt{1 - x^2})
+	if f.Compare("1") > 0 || f.Compare("-1") < 0 {
+		panic(fmt.Sprintf("ArcSin only defined for -1 <= x <= 1. Value given: %s", f.Val()))
 	}
-
-	// ArcSin(x) = arctan(x / sqrt(1 - x^2))
-	one := NewFloat("1")
-	xSquared := f.Times(f.Val())                          // x^2
-	oneMinusXSquared := one.Minus(xSquared.Val())         // 1 - x^2
-	sqrtOneMinusXSquared := oneMinusXSquared.SquareRoot() // sqrt(1 - x^2)
-
-	// x / sqrt(1 - x^2)
-	arcTanInput := f.DividedBy(sqrtOneMinusXSquared.Val())
-	return arcTanInput.ArcTan() // Use ArcTan (if you implement it) or approximate
+	if f.Compare("1") == 0 {
+		return NewFloat(Pi().DividedBy("2").truncateToMaxNumOfDecimalPoints().Val())
+	}
+	if f.Compare("0") == 0 {
+		return NewFloat("0")
+	}
+	if f.Compare("-1") == 0 {
+		return NewFloat(Pi().DividedBy("-2").truncateToMaxNumOfDecimalPoints().Val())
+	}
+	xSquared := NewFloat(f.Val()).Times(f.Val())
+	sqrt1MinusXSquared := NewFloat("1").Minus(xSquared.Val()).SquareRoot()
+	return NewFloat(f.Val()).DividedBy(sqrt1MinusXSquared.Val()).ArcTan()
 }
 
 // ArcTan calculates the inverse tangent (arctan) of the current floating point number
 // and returns the result as a new bigarith.Float
 func (f Float) ArcTan() Float {
-	// Taylor series expansion for arctan(x) when |x| <= 1
-	// arctan(x) = x - (x^3)/3 + (x^5)/5 - (x^7)/7 + ...
-	result := NewFloat(f.Val())
-	numerator := NewFloat(f.Val())
-	sign := NewFloat("-1")
-
-	for i := 3; i < 256; i += 2 {
-		numerator = numerator.Times(f.Val()).Times(f.Val())            // numerator = x^i
-		term := numerator.DividedBy(strconv.Itoa(i)).Times(sign.Val()) // term = +/- x^i / i = +/- numerator / i
-		result = result.Plus(term.Val())                               // accumulate
-		sign = sign.Neg()                                              // alternate sign
+	// ArcTan is helpful because its domain is all x... and it helps define other inverse trig funcs
+	// see: /doc/img/arctna.png
+	// Taylor series expansion for arctan(x)
+	// https://en.wikipedia.org/wiki/Arctangent_series#Accelerated_series
+	onePlusXSquared := f.Times(f.Val()).Plus("1")      // Right Hand Multiple, the denominator of it = 1 + f^2
+	term := f.DividedBy(onePlusXSquared.Val())         // initial term value = f / 1 + f^2
+	arcTanEstimate := NewFloat("0").Plus(term.Val())   // intial estimate is initial term
+	previousArcTanEstimate := arcTanEstimate.Plus("1") // something different to arcTanEstimate
+	counter := NewFloat("2")                           // counter for multiples and division
+	for arcTanEstimate.truncateToMaxNumOfDecimalPoints().Compare(previousArcTanEstimate.truncateToMaxNumOfDecimalPoints().Val()) != 0 {
+		term = term.Times(f.Val()).Times(f.Val())        // each term is multiplied by f^2
+		term = term.DividedBy(onePlusXSquared.Val())     // each term is divided by another onePlusXSquared
+		term = term.Times(counter.Val())                 // multiply by even numbers
+		counter = counter.Plus("1")                      // add 1
+		term = term.DividedBy(counter.Val())             // divide by odd numbers
+		counter = counter.Plus("1")                      // add 1 (to get back to even)
+		previousArcTanEstimate = arcTanEstimate          // save previous value for comparison in loop conditions
+		arcTanEstimate = arcTanEstimate.Plus(term.Val()) // add on the new term
 	}
 
-	return result
+	return arcTanEstimate.truncateToMaxNumOfDecimalPoints()
 }
 
 func Pi() Float {
-	// Constants in the Chudnovsky algorithm
-	// C = 426880 * sqrt(10005)
-	C := NewFloat("426880")
-	K := NewFloat("13591409")
-	M := NewFloat("1")
-	L := NewFloat("13591409")
-	X := NewFloat("1")
-	S := NewFloat("13591409") // same as L
+	// https://en.wikipedia.org/wiki/Approximations_of_%CF%80#Arctangent
+	// TODO: is there a reason I don't just hardcode this instead of calculating it?
+	piEstimate := NewFloat("1")
+	previousPiEstimate := piEstimate.Plus("1")
+	termMultiple := NewInt("1")
+	termDivisor := NewInt("3")
 
-	// Multiply C by sqrt(10005)
-	C.Times(NewFloat("10005").SquareRoot().Val())
+	nextTerm := NewFloat("1")
+	for piEstimate.truncateToMaxNumOfDecimalPoints().Compare(previousPiEstimate.truncateToMaxNumOfDecimalPoints().Val()) != 0 {
+		nextTerm = nextTerm.Times(termMultiple.Val()).DividedBy(termDivisor.Val())
+		previousPiEstimate = piEstimate
+		piEstimate = piEstimate.Plus(nextTerm.Val())
 
-	// Set factorials
-	factK := NewInt("1")
-
-	// Iterations to improve precision (increase this for more digits)
-	iterations := 50
-
-	// Use Chudnovsky's series to compute Pi
-	for i := 1; i < iterations; i++ {
-		// Update K, M, L, X
-		K.Times("545140134")
-		M.Times(strconv.Itoa(i * i * i))
-
-		L.Plus("545140134")
-		X.Times("-262537412640768000")
-
-		// Calculate term and add to the sum S
-		term := NewFloat(M.Val()).Times(L.Val()).DividedBy(X.Val()).DividedBy(factK.Val())
-		S.Plus(term.Val())
-
-		// Update the factorial
-		factK.Times(strconv.Itoa(6 * i))
+		// iterate multiple and divisor
+		termMultiple = termMultiple.Plus("1")
+		termDivisor = termDivisor.Plus("2")
 	}
+	// Pi is actually double the current estimate
+	piEstimate = piEstimate.Times("2")
 
-	// Calculate pi = C / S
-	return NewFloat(C.Val()).DividedBy(S.Val())
-}
-
-func (f Float) Mod2Pi() Float {
-	// Use a more precise Pi value for accurate modulo calculations
-	// Perform x mod 2*Pi
-	return f.Mod(Pi().Times("2").Val())
+	return piEstimate.truncateToMaxNumOfDecimalPoints()
 }

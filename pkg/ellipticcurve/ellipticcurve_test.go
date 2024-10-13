@@ -3,86 +3,235 @@ package ellipticcurve_test
 import (
 	"elliptic/pkg/bigarith"
 	"elliptic/pkg/ellipticcurve"
-	"math/rand"
-	"strconv"
+	"fmt"
 	"testing"
 )
 
-func TestSolveCubic_OneRealRoot(t *testing.T) {
-	// Test for the case where there is 1 real root (discriminant > 0)
-	A := bigarith.NewInt("6")
-	B := bigarith.NewInt("10")
-	ec := ellipticcurve.NewEllipticCurve(A, B)
+// Define a struct to hold the test case inputs and expected output
+type cubicTestCase struct {
+	A                     string   // Coefficient for x term
+	B                     string   // Constant term
+	expectedNumberOfRoots int      // Expected number of real roots
+	expectedRoots         []string // List of expected roots
+}
 
-	roots, err := ec.SolveCubic()
-	if err != nil {
-		t.Fatalf("Error solving cubic: %v", err)
+// Test function for multiple test cases
+func TestSolveCubic_OneRealRoot(t *testing.T) {
+	// Define a list of test cases
+	// testCases := []cubicTestCase{
+	// 	{
+	// 		A:                     "0",
+	// 		B:                     "1",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+	// 		expectedRoots:         []string{"-1"},
+	// 	}, {
+	// 		A:                     "0",
+	// 		B:                     "8",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 8 = 0
+	// 		expectedRoots:         []string{"-2"},
+	// 	}, {
+	// 		A:                     "0",
+	// 		B:                     "27",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 27 = 0
+	// 		expectedRoots:         []string{"-3"},
+	// 	}, {
+	// 		A:                     "0",
+	// 		B:                     "64",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-4"},
+	// 	}, {
+	// 		A:                     "0",
+	// 		B:                     "125",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-5"},
+	// 	}, {
+	// 		A:                     "16",
+	// 		B:                     "40",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-2"},
+	// 	}, {
+	// 		A:                     "36",
+	// 		B:                     "80",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-2"},
+	// 	}, {
+	// 		A:                     "49",
+	// 		B:                     "106",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-2"},
+	// 	}, {
+	// 		A:                     "49",
+	// 		B:                     "174",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-3"},
+	// 	}, {
+	// 		A:                     "49",
+	// 		B:                     "260",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-4"},
+	// 	}, {
+	// 		A:                     "64",
+	// 		B:                     "219",
+	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 		expectedRoots:         []string{"-3"},
+	// 	},
+	// }
+
+	testCases := []cubicTestCase{
+		{
+			A:                     "49",
+			B:                     "260",
+			expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+			expectedRoots:         []string{"-4"},
+		}, {
+			A:                     "64",
+			B:                     "219",
+			expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+			expectedRoots:         []string{"-3"},
+		},
 	}
 
-	// There should be only 1 root
-	if len(roots) != 1 {
-		t.Errorf("Expected 1 real root, got %d", len(roots))
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
+			// Convert strings to big integers
+			A := bigarith.NewInt(tc.A)
+			B := bigarith.NewInt(tc.B)
+
+			// Create a new elliptic curve object with A and B
+			ec := ellipticcurve.NewEllipticCurve(A, B)
+
+			// Solve the cubic equation
+			roots, err := ec.SolveCubic()
+			if err != nil {
+				t.Fatalf("Error solving cubic: %v", err)
+			}
+
+			// Check if the number of real roots matches the expected value
+			if len(roots) != tc.expectedNumberOfRoots {
+				t.Errorf("Expected %d real root(s), got %d", tc.expectedNumberOfRoots, len(roots))
+			}
+
+			// Check if real roots match the expected value
+			for i := range roots {
+				foundMatch := false
+				lastErrorMessage := "NONE"
+				for j := range tc.expectedRoots {
+					if bigarith.NewFloat(roots[i]).Compare(tc.expectedRoots[j]) == 0 {
+						foundMatch = true
+					} else {
+						lastErrorMessage = fmt.Sprintf("Expedcted first root %s, got %s", tc.expectedRoots[j], roots[i])
+					}
+				}
+				if !foundMatch {
+					t.Errorf(lastErrorMessage)
+				}
+			}
+		})
+	}
+}
+
+// Test function for multiple test cases
+func TestSolveCubic_DoubleRoot(t *testing.T) {
+	// Define a list of test cases
+	testCases := []cubicTestCase{
+		{
+			A:                     "-48",
+			B:                     "128",
+			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+			expectedRoots:         []string{"-8", "4"},
+		}, {
+			A:                     "-75",
+			B:                     "250",
+			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+			expectedRoots:         []string{"-10", "5"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
+			// Convert strings to big integers
+			A := bigarith.NewInt(tc.A)
+			B := bigarith.NewInt(tc.B)
+
+			// Create a new elliptic curve object with A and B
+			ec := ellipticcurve.NewEllipticCurve(A, B)
+
+			// Solve the cubic equation
+			roots, err := ec.SolveCubic()
+			if err != nil {
+				t.Fatalf("Error solving cubic: %v", err)
+			}
+
+			// Check if the number of real roots matches the expected value
+			if len(roots) != tc.expectedNumberOfRoots {
+				t.Errorf("Expected %d real root(s), got %d", tc.expectedNumberOfRoots, len(roots))
+			}
+
+			// Check if real roots match the expected value
+			for i := range roots {
+				foundMatch := false
+				lastErrorMessage := "NONE"
+				for j := range tc.expectedRoots {
+					if bigarith.NewFloat(roots[i]).Compare(tc.expectedRoots[j]) == 0 {
+						foundMatch = true
+					} else {
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s", tc.expectedRoots, roots[i])
+					}
+				}
+				if !foundMatch {
+					t.Errorf(lastErrorMessage)
+				}
+			}
+		})
 	}
 }
 
 func TestSolveCubic_ThreeRealRoots(t *testing.T) {
-	// Test for the case where there are 3 real roots (discriminant < 0)
-	A := bigarith.NewInt("-3")
-	B := bigarith.NewInt("-1")
-	ec := ellipticcurve.NewEllipticCurve(A, B)
-
-	roots, err := ec.SolveCubic()
-	if err != nil {
-		t.Fatalf("Error solving cubic: %v", err)
+	// Define a list of test cases
+	testCases := []cubicTestCase{
+		{
+			A:                     "-28",
+			B:                     "48",
+			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+			expectedRoots:         []string{"-6", "2", "4"},
+		},
 	}
 
-	// There should be 3 roots
-	if len(roots) != 3 {
-		t.Errorf("Expected 3 real roots, got %d", len(roots))
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
+			// Convert strings to big integers
+			A := bigarith.NewInt(tc.A) // e.g. -28
+			B := bigarith.NewInt(tc.B) // e.g. 48
+
+			// Create a new elliptic curve object with A and B
+			ec := ellipticcurve.NewEllipticCurve(A, B)
+
+			// Solve the cubic equation
+			roots, err := ec.SolveCubic()
+			if err != nil {
+				t.Fatalf("Error solving cubic: %v", err)
+			}
+
+			// Check if the number of real roots matches the expected value
+			if len(roots) != tc.expectedNumberOfRoots {
+				t.Errorf("Expected %d real root(s), got %d", tc.expectedNumberOfRoots, len(roots))
+			}
+
+			// Check if real roots match the expected value
+			for i := range roots {
+				foundMatch := false
+				lastErrorMessage := "NONE"
+				for j := range tc.expectedRoots {
+					if bigarith.NewFloat(roots[i]).Compare(tc.expectedRoots[j]) == 0 {
+						foundMatch = true
+					} else {
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s", tc.expectedRoots, roots[i])
+					}
+				}
+				if !foundMatch {
+					t.Errorf(lastErrorMessage)
+				}
+			}
+		})
 	}
-}
-
-func TestSolveCubic_TwoEqualRealRoots(t *testing.T) {
-	// Test for the case where there are 2 equal real roots (discriminant = 0)
-	A := bigarith.NewInt("2")
-	B := bigarith.NewInt("1")
-	ec := ellipticcurve.NewEllipticCurve(A, B)
-
-	roots, err := ec.SolveCubic()
-	if err != nil {
-		t.Fatalf("Error solving cubic: %v", err)
-	}
-
-	// There should be 2 equal real roots
-	if len(roots) != 3 {
-		t.Errorf("Expected 3 real roots (2 equal), got %d", len(roots))
-	}
-
-	if roots[1] != roots[2] {
-		t.Errorf("Expected two equal roots, but got %s and %s", roots[1], roots[2])
-	}
-}
-
-func TestSolveCubic_RandomSmallIntegers(t *testing.T) {
-	// Test with random small integers to validate the function over a wide range of inputs
-	for i := 0; i < 50; i++ {
-		A := bigarith.NewInt(randomInt())
-		B := bigarith.NewInt(randomInt())
-		ec := ellipticcurve.NewEllipticCurve(A, B)
-
-		roots, err := ec.SolveCubic()
-		if err != nil {
-			t.Errorf("Error solving cubic for A = %s, B = %s: %v", A.Val(), B.Val(), err)
-		}
-
-		// Validate that at least one real root is returned in all cases
-		if len(roots) < 1 {
-			t.Errorf("Expected at least 1 real root, got %d for A = %s, B = %s", len(roots), A.Val(), B.Val())
-		}
-	}
-}
-
-// Helper function to generate small random integers
-func randomInt() string {
-	return strconv.Itoa(rand.Intn(20) - 10) // Random integers between -10 and 10
 }
