@@ -50,3 +50,6 @@ bin/*
 
 # ignore scripts
 ignorescripts/*
+
+# latex output should be temp
+doc/latex

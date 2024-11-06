@@ -30,6 +30,12 @@ build-cli:	## Build ellipticcurvecli executable
 	GOOS=darwin GOARCH=amd64 go build -o bin/ellipticcurvecli ./cmd/ellipticcurvecli
 	@echo "Build of ellipticcurvecli complete."
 
+.PHONY: build-pns
+build-pns:	## Build prime nummber system (psumsys - pns) executable
+	@echo "Building prime nummber system (psumsys - pns) executable..."
+	GOOS=darwin GOARCH=amd64 go build -o bin/pnumsys ./cmd/pnumsys
+	@echo "Build of prime nummber system (psumsys - pns) complete."
+
 ##@ RUN
 
 .PHONY: run-bigmath

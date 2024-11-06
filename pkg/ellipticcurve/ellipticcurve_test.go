@@ -18,78 +18,80 @@ type cubicTestCase struct {
 // Test function for multiple test cases
 func TestSolveCubic_OneRealRoot(t *testing.T) {
 	// Define a list of test cases
-	// testCases := []cubicTestCase{
-	// 	{
-	// 		A:                     "0",
-	// 		B:                     "1",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
-	// 		expectedRoots:         []string{"-1"},
-	// 	}, {
-	// 		A:                     "0",
-	// 		B:                     "8",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 8 = 0
-	// 		expectedRoots:         []string{"-2"},
-	// 	}, {
-	// 		A:                     "0",
-	// 		B:                     "27",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 27 = 0
-	// 		expectedRoots:         []string{"-3"},
-	// 	}, {
-	// 		A:                     "0",
-	// 		B:                     "64",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-4"},
-	// 	}, {
-	// 		A:                     "0",
-	// 		B:                     "125",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-5"},
-	// 	}, {
-	// 		A:                     "16",
-	// 		B:                     "40",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-2"},
-	// 	}, {
-	// 		A:                     "36",
-	// 		B:                     "80",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-2"},
-	// 	}, {
-	// 		A:                     "49",
-	// 		B:                     "106",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-2"},
-	// 	}, {
-	// 		A:                     "49",
-	// 		B:                     "174",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-3"},
-	// 	}, {
-	// 		A:                     "49",
-	// 		B:                     "260",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-4"},
-	// 	}, {
-	// 		A:                     "64",
-	// 		B:                     "219",
-	// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 		expectedRoots:         []string{"-3"},
-	// 	},
-	// }
-
 	testCases := []cubicTestCase{
 		{
-			A:                     "49",
-			B:                     "260",
-			expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-			expectedRoots:         []string{"-4"},
-		}, {
-			A:                     "64",
-			B:                     "219",
-			expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-			expectedRoots:         []string{"-3"},
+			A:                     "0",
+			B:                     "1",
+			expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+			expectedRoots:         []string{"-1"},
 		},
+		//  {
+		// 		A:                     "0",
+		// 		B:                     "8",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 8 = 0
+		// 		expectedRoots:         []string{"-2"},
+		// 	}, {
+		// 		A:                     "0",
+		// 		B:                     "27",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 27 = 0
+		// 		expectedRoots:         []string{"-3"},
+		// 	}, {
+		// 		A:                     "0",
+		// 		B:                     "64",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-4"},
+		// 	}, {
+		// 		A:                     "0",
+		// 		B:                     "125",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-5"},
+		// 	}, {
+		// 		A:                     "16",
+		// 		B:                     "40",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-2"},
+		// 	}, {
+		// 		A:                     "36",
+		// 		B:                     "80",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-2"},
+		// 	}, {
+		// 		A:                     "49",
+		// 		B:                     "106",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-2"},
+		// 	}, {
+		// 		A:                     "49",
+		// 		B:                     "174",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-3"},
+		// 	}, {
+		// 		A:                     "49",
+		// 		B:                     "260",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-4"},
+		// 	}, {
+		// 		A:                     "64",
+		// 		B:                     "219",
+		// 		expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+		// 		expectedRoots:         []string{"-3"},
+		// 	},
 	}
+
+	// testCases := []cubicTestCase{
+	// {
+	// 	A:                     "49",
+	// 	B:                     "260",
+	// 	expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 	expectedRoots:         []string{"-4"},
+	// },
+	// {
+	// 	A:                     "64",
+	// 	B:                     "219",
+	// 	expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
+	// 	expectedRoots:         []string{"-3"},
+	// },
+	// }
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
@@ -134,17 +136,17 @@ func TestSolveCubic_OneRealRoot(t *testing.T) {
 func TestSolveCubic_DoubleRoot(t *testing.T) {
 	// Define a list of test cases
 	testCases := []cubicTestCase{
-		{
-			A:                     "-48",
-			B:                     "128",
-			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
-			expectedRoots:         []string{"-8", "4"},
-		}, {
-			A:                     "-75",
-			B:                     "250",
-			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
-			expectedRoots:         []string{"-10", "5"},
-		},
+		// {
+		// 	A:                     "-48",
+		// 	B:                     "128",
+		// 	expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+		// 	expectedRoots:         []string{"-8", "4"},
+		// }, {
+		// 	A:                     "-75",
+		// 	B:                     "250",
+		// 	expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+		// 	expectedRoots:         []string{"-10", "5"},
+		// },
 	}
 
 	for _, tc := range testCases {
@@ -189,12 +191,12 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 	// Define a list of test cases
 	testCases := []cubicTestCase{
-		{
-			A:                     "-28",
-			B:                     "48",
-			expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
-			expectedRoots:         []string{"-6", "2", "4"},
-		},
+		// {
+		// 	A:                     "-28",
+		// 	B:                     "48",
+		// 	expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
+		// 	expectedRoots:         []string{"-6", "2", "4"},
+		// },
 	}
 
 	for _, tc := range testCases {

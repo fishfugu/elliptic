@@ -142,6 +142,19 @@ make test-drive
 + - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - - - / - * -  0
 ```
 
+## General Scripts
+
+### LaTeX Tables
+
+#### Prime Multiplicative Number System
+
+```
+make build-pns
+./bin/pnumsys
+```
+
+Generarates the [file](./doc/latex/prime_exponents_table.tex)
+
 ## TODO
 
 - [x] Makefile tidy - organise / make headings for help

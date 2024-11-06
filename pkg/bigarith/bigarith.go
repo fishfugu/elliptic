@@ -5,9 +5,21 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
+
+// min value
+const numberOfDecimalPoints = int(210) // from 48 ... 505 - eveything else seems to error
+const precision = uint(numberOfDecimalPoints * 17 / 5)
+
+// Max iterations or precision tolerance
+var toleranceRational = NewRational(fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints)))
+var testToleranceRational = NewRational(fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints-1)))
+
+var toleranceFloat = new(Float).setRational(toleranceRational)
+var testToleranceFloat = new(Float).setRational(testToleranceRational)
 
 func init() {
 	// log as JSON instead of the default ASCII formatter.
@@ -44,6 +56,20 @@ func bigInt(a string) *big.Int {
 	// no errors are handed back up the chain
 	// instead simply Panic here with clear reasons why
 	x, ok := new(big.Int).SetString(a, 10)
+	if !ok {
+		panic(fmt.Sprintf("Error creating big.Int using SetString - base = %d - string value = %s", 10, a))
+	}
+	return x
+}
+
+// bigRational converts the string representation of the bigarith.Rational into a *big.Rational
+// An internal only function to simplify other code
+// NOTE: Panics on bad string representation of big.Rational
+func bigRational(a string) *big.Rat {
+	// in order to create a simplified application of string <-> big.*
+	// no errors are handed back up the chain
+	// instead simply Panic here with clear reasons why
+	x, ok := new(big.Rat).SetString(a)
 	if !ok {
 		panic(fmt.Sprintf("Error creating big.Int using SetString - base = %d - string value = %s", 10, a))
 	}
@@ -91,4 +117,36 @@ func expSeries(x *big.Float) *big.Float {
 	}
 
 	return result
+}
+
+// nthRoot calculates the integer nth root of a big.Int.
+// It returns the closest integer approximation of the root.
+func nthRoot(x *big.Int, n *big.Int) (*big.Int, error) {
+	if n.Cmp(big.NewInt(1)) == 0 { // The 1st root is the number itself
+		return x, nil
+	}
+
+	// Binary search for nth root
+	low := big.NewInt(0)
+	high := new(big.Int).Set(x)
+	mid := new(big.Int)
+	one := big.NewInt(1)
+
+	for low.Cmp(high) <= 0 {
+		mid.Add(low, high).Div(mid, big.NewInt(2))
+
+		// mid^n
+		midPow := new(big.Int).Exp(mid, n, nil)
+
+		cmp := midPow.Cmp(x)
+		if cmp == 0 {
+			return mid, nil // Found exact root
+		} else if cmp < 0 {
+			low.Add(mid, one)
+		} else {
+			high.Sub(mid, one)
+		}
+	}
+
+	return high, nil // Return closest approximation
 }

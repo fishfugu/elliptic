@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"math/rand"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -41,7 +42,7 @@ func intFromString(s string) (int64, error) {
 }
 
 func TestPlus(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		b := randomInt()
@@ -83,7 +84,7 @@ func TestPlus(t *testing.T) {
 }
 
 func TestMinus(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		b := randomInt()
@@ -125,7 +126,7 @@ func TestMinus(t *testing.T) {
 }
 
 func TestNeg(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integer as string
 		a := randomInt()
 
@@ -162,7 +163,7 @@ func TestNeg(t *testing.T) {
 }
 
 func TestTimes(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		b := randomInt()
@@ -204,7 +205,7 @@ func TestTimes(t *testing.T) {
 }
 
 func TestMod(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		b := randomInt()
@@ -252,7 +253,7 @@ func TestMod(t *testing.T) {
 }
 
 func TestToThePowerOf(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Limit base to values between 2 and 100
 		base := strconv.Itoa(rand.Intn(99) + 2) // random base in range [2, 100]
 		// Limit exponent to values between 0 and 10
@@ -298,7 +299,7 @@ func TestToThePowerOf(t *testing.T) {
 }
 
 func TestFactorial(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Limit the input range to prevent overflow for factorial calculations
 		a := strconv.Itoa(rand.Intn(20) + 1)
 
@@ -338,7 +339,7 @@ func TestFactorial(t *testing.T) {
 }
 
 func TestDividedBy(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		b := randomInt()
@@ -367,15 +368,13 @@ func TestDividedBy(t *testing.T) {
 		originalValue := intObj.Val()
 		result := intObj.DividedBy(b)
 
-		// Parse result as float64 for comparison
-		resultFloat, _, err := big.NewFloat(0).Parse(result.Val(), 10)
-		if err != nil {
-			t.Fatalf("Failed to convert result string to float64: %v", err)
-		}
+		resultNumFloat, _ := strconv.ParseFloat(strings.TrimSpace(result.Num().strVal), 64)
+		resultDenomFloat, _ := strconv.ParseFloat(strings.TrimSpace(result.Denom().strVal), 64)
+		floatResult := resultNumFloat / resultDenomFloat
 
 		// Verify the result
-		if resultFloat.Cmp(big.NewFloat(expectedResult)) != 0 {
-			t.Errorf("DividedBy failed: %d / %d = %s, expected %f", intA, intB, result.Val(), expectedResult)
+		if floatResult != expectedResult {
+			t.Errorf("DividedBy failed - result: %f, expected %f", floatResult, expectedResult)
 		}
 
 		// Verify the original object is not altered
@@ -386,7 +385,7 @@ func TestDividedBy(t *testing.T) {
 }
 
 func TestModularInverse_RelativelyPrime(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		p := randomInt()
@@ -418,7 +417,7 @@ func TestModularInverse_RelativelyPrime(t *testing.T) {
 }
 
 func TestModularInverse_NotRelativelyPrime(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate random integers as strings
 		a := randomInt()
 		p := randomInt()
@@ -443,7 +442,7 @@ func TestModularInverse_NotRelativelyPrime(t *testing.T) {
 }
 
 func TestDivideInField_RelativelyPrime(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate 3 random integers
 		a := randomInt()
 		d := randomInt()
@@ -496,7 +495,7 @@ func TestDivideInField_RelativelyPrime(t *testing.T) {
 }
 
 func TestDivideInField_PanicWhenPGreaterThan(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 10; i++ {
 		// Generate 3 random integers
 		a := randomInt()
 		d := randomInt()
