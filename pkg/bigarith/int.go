@@ -46,6 +46,7 @@ func (i Int) ProbablyPrime() bool {
 // and returns a new Int with the updated value
 func (i Int) set(a string) Int {
 	i.strVal = a
+	i.bigIntVal = bigInt(a) // Cache the big.Int
 	return i
 }
 
@@ -62,9 +63,14 @@ func (i Int) setBigInt(a big.Int) Int {
 }
 
 // Float returns the value of the current integer as a new bigarith.Float
-func (i Int) Float() Float {
-	return NewFloat(i.strVal)
-}
+// func (i Int) Float() Float {
+// 	return NewFloat(i.strVal)
+// }
+
+// Rational returns the value of the current integer as a new bigarith.Rational
+// func (i Int) Rational() Rational {
+// 	return NewRational(i.strVal)
+// }
 
 // Neg returns the negated value of the current integer as a new bigarith.Int
 func (i Int) Neg() Int {
@@ -87,6 +93,14 @@ func (i Int) Minus(a string) Int {
 // and returns the result as a new bigarith.Int
 func (i Int) Times(a string) Int {
 	return i.setBigInt(*new(big.Int).Mul(bigInt(i.strVal), bigInt(a)))
+}
+
+// IsEven checks if the Int is an even integer
+func (i Int) IsEven() bool {
+	two := big.NewInt(2)
+	zero := big.NewInt(0)
+	mod := new(big.Int).Mod(i.bigIntVal, two) // Calculate modulus with 2
+	return mod.Cmp(zero) == 0                 // Check if modulus is 0, which indicates an even number
 }
 
 // SquareRoot finds the square root of the current integer,

@@ -92,6 +92,10 @@ test:	## Run unit tests for all packages under pkg
 	go tool cover -html=coverage.out -o coverage.html
 	open coverage.html
 
+.PHONY: test-performance
+test-performance:	## run unit tests and extract duration / avg perforamcnce stats
+	go test -v -count=1 -timeout 1m ./pkg/bigarith/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
+
 .PHONY: clean
 clean:	## Remove binaries and any temporary files
 	@echo "Cleaning up..."

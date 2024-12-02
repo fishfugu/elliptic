@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	ba "elliptic/pkg/bigarith"
@@ -12,6 +13,13 @@ import (
 const divider = "==========================="
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error percolated to main, error: %v\n", err)
+	}
+}
+
+func run() error {
 	curves := []struct {
 		a, b, p ba.Int
 	}{
@@ -27,8 +35,7 @@ func main() {
 
 		points, err := finiteintfield.CalculatePoints(*eCurve)
 		if err != nil {
-			fmt.Println("Error:", err)
-			return
+			return fmt.Errorf("error from CalculatePoints: %v\n", err)
 		}
 
 		fmt.Println("Points on the Elliptic Curve:")
@@ -42,4 +49,6 @@ func main() {
 		visualisation := finiteintfield.VisualisePoints(points, pInt)
 		fmt.Println(visualisation)
 	}
+
+	return nil
 }

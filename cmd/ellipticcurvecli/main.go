@@ -11,6 +11,13 @@ import (
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error percolated to main, error: %v\n", err)
+	}
+}
+
+func run() error {
 	// Define command-line flags for A, B, and P
 	aFlag := flag.String("A", "", "Coefficient A of the elliptic curve")
 	bFlag := flag.String("B", "", "Coefficient B of the elliptic curve")
@@ -23,13 +30,13 @@ func main() {
 	b := getInput("B", *bFlag)
 	p := getInput("P", *pFlag)
 
-	// Convert inputs to big.Int
-	aBigInt := ba.NewInt(a)
-	bBigInt := ba.NewInt(b)
-	pBigInt := ba.NewInt(p)
+	// Convert inputs to bigarith.Int
+	aBigarithInt := ba.NewInt(a)
+	bBigarithInt := ba.NewInt(b)
+	pBigarithInt := ba.NewInt(p)
 
 	// Create the elliptic curve over the finite field
-	curve := ellipticcurve.NewFiniteFieldEC(aBigInt, bBigInt, pBigInt)
+	curve := ellipticcurve.NewFiniteFieldEC(aBigarithInt, bBigarithInt, pBigarithInt)
 
 	// Calculate points on the curve
 	points, err := finiteintfield.CalculatePoints(*curve)
@@ -46,19 +53,22 @@ func main() {
 		// Convert bigarith.Int to int
 		// TODO: change function to handle string input for better compatibility
 		// TODO: handle this error
-		pInt, _ := strconv.Atoi(pBigInt.Val())
+		pInt, _ := strconv.Atoi(pBigarithInt.Val())
 		visualisation := finiteintfield.VisualisePoints(points, pInt)
 		fmt.Println(visualisation)
 	}
 
 	// Calc / display "lowest x value where y = 0" value
+	testA, testB, testP := curve.GetDetails()
+	fmt.Fprintf(os.Stderr, fmt.Sprintf("*** A: %s, B: %s, P: %s\n", testA.Val(), testB.Val(), testP.Val()))
 	roots, err := curve.SolveCubic()
+	fmt.Printf("*** Roots: %v\n", roots)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Roots: %v\n", roots)
+	fmt.Printf("@@@ Roots: %v\n", roots)
 	// minX, err := curve.SolveCubic()
 	// if err != nil {
 	// 	fmt.Fprintf(os.Stderr, "Error finding minimum x value where y = 0: %v\n", err)
@@ -78,6 +88,7 @@ func main() {
 
 	// Calc / display where tangent to EC goes through minX
 
+	return nil
 }
 
 // getInput prompts the user for input if the provided value is empty.

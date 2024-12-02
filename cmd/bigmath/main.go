@@ -2,11 +2,20 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	ba "elliptic/pkg/bigarith"
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
+		panic(fmt.Sprintf("panic, error: %v\n", err))
+	}
+}
+
+func run() error {
 	// Perform addition
 	addResult := ba.NewInt("12345678901234567890").Plus(ba.NewInt("98765432109876543210").Val())
 	fmt.Println("Addition Result:", addResult.Val())
@@ -27,4 +36,6 @@ func main() {
 	// Perform division in the field defined by the prime modulus
 	divideResult := ba.NewInt("98765432109876543210").DivideInField("12345678901234567890", prime.Val())
 	fmt.Println("Division In Field Result:", divideResult.Val())
+
+	return nil
 }

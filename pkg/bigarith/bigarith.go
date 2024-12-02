@@ -11,12 +11,14 @@ import (
 )
 
 // min value
-const numberOfDecimalPoints = int(210) // from 48 ... 505 - eveything else seems to error
+const numberOfDecimalPoints = int(50) // from 48 ... 505 - eveything else seems to error
 const precision = uint(numberOfDecimalPoints * 17 / 5)
 
 // Max iterations or precision tolerance
-var toleranceRational = NewRational(fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints)))
-var testToleranceRational = NewRational(fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints-1)))
+var toleranceRationalStr = fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints))
+var toleranceRational = NewRational(toleranceRationalStr)
+var testToleranceRationalStr = fmt.Sprintf("1/1%s", strings.Repeat("0", numberOfDecimalPoints-1))
+var testToleranceRational = NewRational(testToleranceRationalStr)
 
 var toleranceFloat = new(Float).setRational(toleranceRational)
 var testToleranceFloat = new(Float).setRational(testToleranceRational)
@@ -43,7 +45,11 @@ func bigFloat(a string) *big.Float {
 	// instead simply Panic here with clear reasons why
 	x, ok := new(big.Float).SetPrec(precision).SetString(a)
 	if !ok {
-		panic(fmt.Sprintf("Error creating big.Float using SetString - base = %d - string value = %s", 10, a))
+		errA := a
+		if len(errA) > 250 {
+			errA = errA[:250] + "..."
+		}
+		panic(fmt.Sprintf("Error creating big.Float using SetString - base = %d - string value = %s", 10, errA))
 	}
 	return x
 }
@@ -71,7 +77,7 @@ func bigRational(a string) *big.Rat {
 	// instead simply Panic here with clear reasons why
 	x, ok := new(big.Rat).SetString(a)
 	if !ok {
-		panic(fmt.Sprintf("Error creating big.Int using SetString - base = %d - string value = %s", 10, a))
+		panic(fmt.Sprintf("error setting Big Rat: %s", a))
 	}
 	return x
 }

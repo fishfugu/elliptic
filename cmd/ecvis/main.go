@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/color"
 	"math/big"
+	"os"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -17,6 +18,13 @@ import (
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error percolated to main, error: %v\n", err)
+	}
+}
+
+func run() error {
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Elliptic Curve Visualisation in Finite Field")
 
@@ -29,7 +37,7 @@ func main() {
 	if err != nil {
 		myWindow.SetContent(canvas.NewText("Error calculating points: "+err.Error(), color.White))
 		myWindow.ShowAndRun()
-		return
+		return nil
 	}
 
 	// Set up the canvas
@@ -77,4 +85,6 @@ func main() {
 	myWindow.SetContent(split)
 	myWindow.Resize(fyne.NewSize(w, h))
 	myWindow.ShowAndRun()
+
+	return nil
 }

@@ -56,8 +56,6 @@ func (ffec *FiniteFieldEC) GetDetails() (bigarith.Int, bigarith.Int, bigarith.In
 	return ffec.ec.a, ffec.ec.b, ffec.p
 }
 
-// TODO: convert all of these into things that use bigarith instead of floats or big.Floats
-
 // finds minimum value of X for an Elliptic Curve where y = 0
 // for curve in Weierstrass form, this should be the
 // lowest value of x for the whole curve in the real numbers
@@ -67,6 +65,7 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 	var roots []string
 
 	A, B := ec.GetDetails()
+	logrus.Debugf("A: %s, B: %s", A.Val(), B.Val())
 
 	// logrus.Debugf("A and B details fetched: A = %s, B = %s", A.Val(), B.Val())
 
@@ -90,22 +89,27 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 		NegativeBOver2PlusSqrtDiscriminant := NegativeBOver2.Plus(sqrtDiscriminant.Val())
 		// logrus.Debugf("NegativeBOver2PlusSqrtDiscriminant (%s + %s): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2PlusSqrtDiscriminant.Val())
 		u := NegativeBOver2PlusSqrtDiscriminant.NthRoot("3")
-		// logrus.Debugf("u (cube root (%s + %s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), u.Val())
+		logrus.Debugf("u (cube root (%s + %s) = (%s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2PlusSqrtDiscriminant.Val(), u.Val())
+
 		NegativeBOver2MinusSqrtDiscriminant := NegativeBOver2.Minus(sqrtDiscriminant.Val())
 		// logrus.Debugf("NegativeBOver2MinusSqrtDiscriminant (%s - %s): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2MinusSqrtDiscriminant.Val())
 		v := NegativeBOver2MinusSqrtDiscriminant.NthRoot("3")
-		// logrus.Debugf("v (cube root (%s - %s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), v.Val())
+		logrus.Debugf("v (cube root (%s - %s) = (%s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2MinusSqrtDiscriminant.Val(), v.Val())
+
 		root := u.Plus(v.Val()).Val()
+
 		// logrus.Debugf("root: %s", root)
 		roots = append(roots, root)
-		// logrus.Debugf("Roots calculated for one real and two complex roots: %s", roots)
+		logrus.Debugf("Roots calculated for one real and two complex roots: %s", roots)
+		logrus.Debugf("Rootz: %s", roots)
 	} else if discriminantCmpToZero == 0 {
 		// All roots are real, at least two are equal
 		u := NegativeBOver2.NthRoot("3")
 		root1 := u.Times("2").Val()
 		root2 := u.Neg().Val()
 		roots = append(roots, root1, root2, root2)
-		// logrus.Debug("Roots calculated for all real and at least two equal roots: ", roots)
+		logrus.Debug("Roots calculated for all real and at least two equal roots: ", roots)
+		logrus.Debugf("Rootz: %s", roots)
 	} else {
 		// Three real roots (discriminant < 0)
 
@@ -145,8 +149,8 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 
 		// Calculate 2 Pi / 3 and 4 Pi over 3
 
-		twoPi := bigarith.NewFloat("2").TimesPi()
-		fourPi := bigarith.NewFloat("4").TimesPi()
+		twoPi := bigarith.NewRational("2").TimesPi()
+		fourPi := bigarith.NewRational("4").TimesPi()
 
 		// A = -28, B = 48
 		//	\[
@@ -175,8 +179,11 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 		root3 := sqrtMinusAOver3Times2.Times(cosThetaPlus4PiOver3.Val()).Val()
 
 		roots = append(roots, root1, root2, root3)
-		// logrus.Debug("Roots calculated for all real and all distinct roots: ", roots)
+		logrus.Debug("Roots calculated for all real and all distinct roots: ", roots)
+		logrus.Debugf("Rootz: %s", roots)
 	}
+
+	logrus.Debugf("Rootz 2: %s", roots)
 	return roots, nil
 }
 
@@ -184,20 +191,20 @@ func (ffec FiniteFieldEC) SolveCubic() ([]string, error) {
 	results, err := ffec.ec.SolveCubic()
 	// convert each value into its mod p equivalent
 	for i, result := range results {
-		results[i] = bigarith.NewFloat(result).Mod(ffec.p.Val()).Val()
+		results[i] = bigarith.NewRational(result).Mod(ffec.p.Val()).Val()
 	}
 	return results, err
 }
 
 // FindY finds the y value for an EllipticCurve - x^3 + Ax + B
 // it returns the positive y value - but the other value is simply the negative of that anyway
-func (ec EllipticCurve) FindY(x bigarith.Float) (bigarith.Float, error) {
+func (ec EllipticCurve) FindY(x bigarith.Rational) (bigarith.Rational, error) {
 	A, B := ec.GetDetails()
 	Ax := A.Times(x.Val())
 	return x.ToThePowerOf("3").Plus(Ax.Val()).Plus(B.Val()).SquareRoot(), nil
 }
 
-func (ffec FiniteFieldEC) FindY(x bigarith.Float) (bigarith.Float, error) {
+func (ffec FiniteFieldEC) FindY(x bigarith.Rational) (bigarith.Rational, error) {
 	result, err := ffec.ec.FindY(x)
 	return result.Mod(ffec.p.Val()), err
 }
