@@ -157,7 +157,7 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 		// {
 		// 	A:             "-75",
 		// 	B:             "250",
-		// 	expectedRoots: []string{"-10", "5"},
+		// 	expectedRoots: []string{"-10", "5", "5"},
 		// },
 	}
 
@@ -205,10 +205,9 @@ func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 	// Define a list of test cases
 	testCases := []cubicTestCase{
 		// {
-		// 	A:                     "-28",
-		// 	B:                     "48",
-		// 	expectedNumberOfRoots: 3, // Expected single real root at x = -1 for equation x^3 + 0x + 1 = 0
-		// 	expectedRoots:         []string{"-6", "2", "4"},
+		// 	A:             "-28",
+		// 	B:             "48",
+		// 	expectedRoots: []string{"-6", "2", "4"},
 		// },
 	}
 

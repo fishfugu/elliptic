@@ -63,13 +63,23 @@ func (r Rational) set(a string) Rational {
 	return r
 }
 
+// setBigRational sets the string value that represents the bigarith.Rational value
+// by getting a text representation from a big.Rational object
+// and returns a new Rational with the updated value
+func (r Rational) setBigRational(a big.Rat) Rational {
+	r.bigRatVal = &a      // Cache the big.Rat directly
+	r.strVal = a.String() // Update the strVal if needed
+	return r
+}
+
 // truncate reduces the length of the numerator and denominator by the same amount
 // essentially this "divides" each by the same factor of 10
-// it does so in a way such that, if BOTH the numerator and denominator are longer than "numberOfDecimalPoints" (see in bigarith.go)
+// it does so in a way such that, if BOTH the numerator and denominator are longer than "numberOfDecimalPoints" + 1 (see in bigarith.go)
 // then whichever is shorter will now be that length
 // it is a computationally simple way of rounding the Rational when its accuracy is above the assumed maximum
 // and allows rounding that may be beneficial (if the the Rational is really close to an integer or much simpler value for e.g.)
 func (r Rational) truncate() Rational {
+	truncLength := numberOfDecimalPoints + 5
 	num := r.Num().Val()
 	// deal with negatives
 	negStr := ""
@@ -81,23 +91,23 @@ func (r Rational) truncate() Rational {
 	den := r.Denom().Val()
 	lenNum := len(num)
 	lenDen := len(den)
-	if lenDen <= numberOfDecimalPoints || lenNum <= numberOfDecimalPoints { // if EITHER is shorter or same length then exit
-		// both must be longer than numberOfDecimalPoints to continue
+	if lenDen <= truncLength || lenNum <= truncLength { // if EITHER is shorter or same length then exit
+		// both must be longer than truncLength to continue
 		return r
 	}
 	lenShortest := lenNum // just assume this then test
 	if lenNum >= lenDen { // num is longest or the same - use length of den
 		lenShortest = lenDen
 	}
-	lenToTrunc := lenShortest - numberOfDecimalPoints // must be enough to get  shortest to right length, and leave longest same or longer
+	lenToTrunc := lenShortest - truncLength // must be enough to get  shortest to right length, and leave longest same or longer
 	// deal with automatic 0
-	if lenDen-lenNum >= numberOfDecimalPoints { // number MUST be 0... denominator is juat oob big compared to numerator
+	if lenDen-lenNum >= truncLength { // number MUST be 0... denominator is juat oob big compared to numerator
 		return NewRational("0")
 	}
 	// do shortening
-	numNextChar := num[numberOfDecimalPoints : numberOfDecimalPoints+1]
+	numNextChar := num[truncLength : truncLength+1]
 	num = num[:(lenNum)-lenToTrunc]
-	denNextChar := den[numberOfDecimalPoints : numberOfDecimalPoints+1]
+	denNextChar := den[truncLength : truncLength+1]
 	den = den[:(lenDen)-lenToTrunc]
 	// make into Ints for rounding calcs
 	numInt := NewInt(num)
@@ -121,15 +131,6 @@ func (r Rational) truncate() Rational {
 		}
 	}
 	return r.set(fmt.Sprintf("%s%s/%s", negStr, numInt.Val(), denInt.Val()))
-}
-
-// setBigRational sets the string value that represents the bigarith.Rational value
-// by getting a text representation from a big.Rational object
-// and returns a new Rational with the updated value
-func (r Rational) setBigRational(a big.Rat) Rational {
-	r.bigRatVal = &a      // Cache the big.Rat directly
-	r.strVal = a.String() // Update the strVal if needed
-	return r
 }
 
 // EXPORTED

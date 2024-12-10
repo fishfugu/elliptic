@@ -11,7 +11,7 @@ import (
 )
 
 // min value
-const numberOfDecimalPoints = int(50) // from 48 ... 505 - eveything else seems to error
+const numberOfDecimalPoints = int(120) // from 48 ... 505 - eveything else seems to error
 const precision = uint(numberOfDecimalPoints * 17 / 5)
 
 // Max iterations or precision tolerance

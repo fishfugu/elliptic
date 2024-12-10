@@ -7,6 +7,8 @@ import (
 	pns "elliptic/pkg/pnumsys"
 )
 
+// TODO: move this out into its own thing - or tidy up for this repo
+// This was originally a "thought experiment" - but I wanted to use the bigarith stuff to try it out...
 // to run:
 // make build-pns
 // ./bin/pnumsys

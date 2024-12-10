@@ -2,6 +2,7 @@ package ellipticcurve
 
 import (
 	"elliptic/pkg/bigarith"
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -65,62 +66,45 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 	var roots []string
 
 	A, B := ec.GetDetails()
-	logrus.Debugf("A: %s, B: %s", A.Val(), B.Val())
-
-	// logrus.Debugf("A and B details fetched: A = %s, B = %s", A.Val(), B.Val())
 
 	// Calculate the discriminant - (A/3)^3 + (B/2)^2
 	// = (A^3/27) + (B^2/4) = (4 A^3 / 108) + (27 B^2 / 108) = (4 A^3 + 27 B^2) / 108
 	NegativeBOver2 := B.DividedBy("2").Neg()
-	// logrus.Debug("NegativeBOver2: ", NegativeBOver2.Val())
 	Aover3Cubed := A.ToThePowerOf("3", "").DividedBy("27")
-	// logrus.Debug("Aover3Cubed: ", Aover3Cubed.Val())
 	BOver2Squared := B.ToThePowerOf("2", "").DividedBy("4")
-	// logrus.Debug("BOver2Squared: ", BOver2Squared.Val())
 
 	discriminant := Aover3Cubed.Plus(BOver2Squared.Val())
-	// logrus.Debug("Discriminant calculated: ", discriminant.Val())
 
 	discriminantCmpToZero := discriminant.Compare("0")
 	if discriminantCmpToZero > 0 {
 		// One real root, two complex roots
 		sqrtDiscriminant := discriminant.SquareRoot()
-		// logrus.Debug("Discriminant square root calculated: ", sqrtDiscriminant.Val())
 		NegativeBOver2PlusSqrtDiscriminant := NegativeBOver2.Plus(sqrtDiscriminant.Val())
-		// logrus.Debugf("NegativeBOver2PlusSqrtDiscriminant (%s + %s): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2PlusSqrtDiscriminant.Val())
 		u := NegativeBOver2PlusSqrtDiscriminant.NthRoot("3")
-		logrus.Debugf("u (cube root (%s + %s) = (%s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2PlusSqrtDiscriminant.Val(), u.Val())
 
 		NegativeBOver2MinusSqrtDiscriminant := NegativeBOver2.Minus(sqrtDiscriminant.Val())
-		// logrus.Debugf("NegativeBOver2MinusSqrtDiscriminant (%s - %s): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2MinusSqrtDiscriminant.Val())
 		v := NegativeBOver2MinusSqrtDiscriminant.NthRoot("3")
-		logrus.Debugf("v (cube root (%s - %s) = (%s)): %s", NegativeBOver2.Val(), sqrtDiscriminant.Val(), NegativeBOver2MinusSqrtDiscriminant.Val(), v.Val())
 
 		root := u.Plus(v.Val()).Val()
-
-		// logrus.Debugf("root: %s", root)
 		roots = append(roots, root)
-		logrus.Debugf("Roots calculated for one real and two complex roots: %s", roots)
-		logrus.Debugf("Rootz: %s", roots)
 	} else if discriminantCmpToZero == 0 {
 		// All roots are real, at least two are equal
 		u := NegativeBOver2.NthRoot("3")
 		root1 := u.Times("2").Val()
 		root2 := u.Neg().Val()
 		roots = append(roots, root1, root2, root2)
-		logrus.Debug("Roots calculated for all real and at least two equal roots: ", roots)
-		logrus.Debugf("Rootz: %s", roots)
 	} else {
 		// Three real roots (discriminant < 0)
+		fmt.Printf("discriminant: %s", discriminant.Val())
 
 		// r = \sqrt{\frac{-A^3}{27}}
 		r := A.ToThePowerOf("3", "").DividedBy("27").Neg().SquareRoot()
-		// logrus.Debugf("r: %s", r.Val())
+		logrus.Debugf("r: %s", r.Val())
 
 		// \cos(\theta) = -\frac{B}{2r}
 		// \theta) = \arccos{ -\frac{B}{2r} }
 		theta := B.DividedBy(r.Val()).DividedBy("2").Neg().ArcCos()
-		// logrus.Debugf("theta: %s", theta.Val())
+		logrus.Debugf("theta: %s", theta.Val())
 
 		// 2. **Check for Valid Range**:
 		// If the value computed for \(\cos(\theta)\) is outside the range, it indicates a numerical issue or a mistake in the conversion. For three real roots, the correct trigonometric approach should always yield a valid angle \(\theta\).
@@ -142,30 +126,27 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 		// - This adjustment ensures that you always get a valid angle for \(\arccos(\cos(\theta))\), which will lead to the correct roots.
 
 		// ### Explanation of Why It Happens
-
 		// The reason this occurs is that the formula for \(\cos(\theta)\) can be sensitive to numerical precision, especially when dealing with values close to the limits of floating-point representation. The cubic equation itself may have perfectly valid real roots, but the trigonometric calculation must be treated carefully to avoid errors.
-
 		// Using the corrected approach to calculate \(\cos(\theta)\) should lead to the three real roots \(-6\), \(2\), and \(4\) as expected for the values \(A = -28\) and \(B = 48\).
 
 		// Calculate 2 Pi / 3 and 4 Pi over 3
-
 		twoPi := bigarith.NewRational("2").TimesPi()
 		fourPi := bigarith.NewRational("4").TimesPi()
 
-		// A = -28, B = 48
 		//	\[
 		//		\cos(\theta) = -\frac{3B}{2A} \sqrt{\frac{27}{-A}} // - ( ( 3 * 48 ) / ( 2 * ( -28 ) ) ) sqrt( 27 / - (-28) ) =
 		//	\]
 		//	theta = arccos ( -\frac{3B}{2A} \sqrt{\frac{27}{-A}} )
 
-		// *** // theta := bigarith.NewInt("27").DividedBy(A.Val()).Neg().SquareRoot().Times("3").Times(B.Val()).DividedBy("2").DividedBy(A.Val()).Neg().ArcCos()
-
 		// all the final root values are calculated by multiplying by: 2 * sqrt{ - A / 3 }
+
 		sqrtMinusAOver3Times2 := bigarith.NewInt(A.Val()).DividedBy("3").Neg().SquareRoot().Times("2")
 		// (theta plus 2kpi) / 3
+
 		cosThetaOver3 := theta.DividedBy("3").Cos()
 		cosThetaPlus2PiOver3 := theta.Plus(twoPi.Val())
 		cosThetaPlus4PiOver3 := theta.Plus(fourPi.Val())
+
 		// The three real roots \(x_1\), \(x_2\), and \(x_3\) can then be computed as:
 		// \[
 		// x_k = 2\sqrt{\frac{-A}{3}} \cos\left( \frac{\theta + 2k\pi}{3} \right)
@@ -183,7 +164,6 @@ func (ec EllipticCurve) SolveCubic() ([]string, error) {
 		logrus.Debugf("Rootz: %s", roots)
 	}
 
-	logrus.Debugf("Rootz 2: %s", roots)
 	return roots, nil
 }
 
