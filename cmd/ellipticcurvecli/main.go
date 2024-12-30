@@ -1,18 +1,20 @@
 package main
 
 import (
-	ba "elliptic/pkg/bigarith"
-	"elliptic/pkg/ellipticcurve"
 	"flag"
 	"fmt"
+	"math/big"
 	"os"
+
+	"elliptic/pkg/ellipticcurve"
+	"elliptic/pkg/utils"
 )
 
 func main() {
+	logger := utils.InitialiseLogger("[ECCLI]")
+
 	err := run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error percolated to main, error: %v\n", err)
-	}
+	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
 }
 
 func run() error {
@@ -30,13 +32,14 @@ func run() error {
 	fmt.Println()
 
 	// Convert inputs to bigarith.Int
-	aBigarithInt := ba.NewInt(a)
-	bBigarithInt := ba.NewInt(b)
+	// TODO: deal with errors here
+	aBigInt, _ := new(big.Int).SetString(a, 10)
+	bBigInt, _ := new(big.Int).SetString(b, 10)
 
 	switch p {
 	case "":
 		// Create the elliptic curve over the finite field
-		curve := ellipticcurve.NewEllipticCurve(aBigarithInt, bBigarithInt)
+		curve := ellipticcurve.NewEllipticCurve(aBigInt, bBigInt)
 
 		// Calc / display "lowest x value where y = 0" value
 		roots, err := curve.SolveCubic()
@@ -46,11 +49,18 @@ func run() error {
 		}
 
 		fmt.Printf("Roots: %v\n", roots)
+		fmt.Println()
+		for i, root := range roots {
+			rootFloat := new(big.Float).SetRat(root)
+			fmt.Printf("Root %d as float: %v\n", i+1, rootFloat)
+		}
+		fmt.Println()
 	default:
-		pBigarithInt := ba.NewInt(p)
+		// TODO: deal with error here
+		pBigInt, _ := new(big.Int).SetString(p, 10)
 
 		// Create the elliptic curve over the finite field
-		curve := ellipticcurve.NewFiniteFieldEC(aBigarithInt, bBigarithInt, pBigarithInt)
+		curve := ellipticcurve.NewFiniteFieldEC(aBigInt, bBigInt, pBigInt)
 
 		// Calculate points on the curve
 		// points, err := finiteintfield.CalculatePoints(*curve)
@@ -80,6 +90,13 @@ func run() error {
 		}
 
 		fmt.Printf("Roots (mod %s): %v\n", p, roots)
+		fmt.Println()
+		for i, root := range roots {
+			rootFloat := new(big.Float).SetRat(root)
+			fmt.Printf("Root (mod %s) %d as float: %v\n", p, i+1, rootFloat)
+		}
+		fmt.Println()
+
 		// minX, err := curve.SolveCubic()
 		// if err != nil {
 		// 	fmt.Fprintf(os.Stderr, "Error finding minimum x value where y = 0: %v\n", err)

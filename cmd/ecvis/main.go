@@ -1,27 +1,26 @@
 package main
 
 import (
-	ba "elliptic/pkg/bigarith"
-	"elliptic/pkg/ellipticcurve"
-	"elliptic/pkg/finiteintfield"
 	"fmt"
 	"image/color"
 	"math/big"
-	"os"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+
+	"elliptic/pkg/ellipticcurve"
+	"elliptic/pkg/finiteintfield"
+	"elliptic/pkg/utils"
 )
 
 func main() {
+	logger := utils.InitialiseLogger("[ECVIS]")
+
 	err := run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error percolated to main, error: %v\n", err)
-	}
+	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
 }
 
 func run() error {
@@ -29,7 +28,7 @@ func run() error {
 	myWindow := myApp.NewWindow("Elliptic Curve Visualisation in Finite Field")
 
 	// Initialise curve parameters and create curve
-	a, b, p := ba.NewInt("1"), ba.NewInt("1"), ba.NewInt("13")
+	a, b, p := new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(13)
 	curve := ellipticcurve.NewFiniteFieldEC(a, b, p)
 
 	// Calculate points on the curve
@@ -47,14 +46,13 @@ func run() error {
 
 	// Plot the points and collect point details
 	for _, point := range points {
-		x, _ := new(big.Int).SetString(point[0], 10)
-		y, _ := new(big.Int).SetString(point[1], 10)
-		// Convert bigarith.Int to int
-		// TODO: change function to handle string input for better compatibility
-		// TODO: handle this error
-		pInt, _ := strconv.Atoi(p.Val())
-		xCanvas := float32(x.Int64()) * (float32(w) / float32(int64(pInt)))
-		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(int64(pInt)))) // Flipping y to have the origin at the bottom left
+		x := new(big.Int).Set(point[0]) // dupe point[0] into x
+		y := new(big.Int).Set(point[1]) // dupe point[1] into y
+		// Convert p to int64
+		// TODO: deal with "accuracy" details - i.e. the "_" return value
+		pFloat, _ := new(big.Int).Set(p).Float64()
+		xCanvas := float32(x.Int64()) * (float32(w) / float32(pFloat))
+		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(pFloat))) // Flipping y to have the origin at the bottom left
 		fynePoint := canvas.NewCircle(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
 		fynePoint.Resize(fyne.NewSize(5, 5))
 		fynePoint.Move(fyne.NewPos(xCanvas, yCanvas))
