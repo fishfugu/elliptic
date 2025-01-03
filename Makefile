@@ -39,7 +39,7 @@ build-pns:	## Build prime nummber system (psumsys - pns) executable
 ##@ RUN
 
 .PHONY: run-bigmath
-run-bigmath: build-bigmath test-quiet	## Run bigmath binary - ensuring latest build is executed - running tests first
+run-bigmath: build-bigmath test-verbose	## Run bigmath binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "************************************************************"
 	@echo "✓✓✓✓✓ -- Bigmath built, and tested - continuing on to run..."
@@ -88,13 +88,13 @@ run-cli: build-cli test-quiet	## Run Elliptic Curve CLI - ensuring latest build 
 test:	## Run unit tests for all packages under pkg
 	@echo "Running tests..."
 	go clean -testcache
-	go test -v ./... -coverprofile=coverage.out
+	go test -v -timeout=10m -bench=. ./... -coverprofile=coverage.out
 	go tool cover -html=coverage.out -o coverage.html
 	open coverage.html
 
 .PHONY: test-performance
 test-performance:	## run unit tests and extract duration / avg perforamcnce stats
-	go test -v -count=1 -timeout 1m ./pkg/bigarith/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
+	go test -v -timeout=10m -bench=. -count=1 ./pkg/bigarith/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
 
 .PHONY: clean
 clean:	## Remove binaries and any temporary files
@@ -116,14 +116,14 @@ test-drive: help build-all run-bigmath run-finitefield run-ecvis test clean	## R
 .PHONY: test-quiet
 test-quiet:	## Run unit tests for all packages under pkg - but quietly - quits at first error
 	go clean -testcache
-	go test -failfast ./pkg/...
+	go test -failfast -timeout=10m -bench=. ./pkg/...
 
 .PHONY: test-verbose
 test-verbose:	## Run unit tests for all packages under pkg - in verbose mode
 # TODO: implement verbose mode more conistently
 	@echo "Running tests in verbose mode..."
 	go clean -testcache
-	go test -v ./pkg/... -coverprofile=coverage.out -args -verbose
+	go test -v -timeout=10m -bench=. ./pkg/... -coverprofile=coverage.out -args
 	go tool cover -html=coverage.out -o coverage.html
 	open coverage.html
 

@@ -33,7 +33,7 @@ func run(logger *logrus.Logger) error {
 		fmt.Printf("Elliptic Curve: y^2 = x^3 + %sx + %s\nDefined in a finite field modulo %s\n%s\n", curve.a.String(), curve.b.String(), curve.p.String(), divider)
 
 		eCurve := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
-
+ 
 		points, err := finiteintfield.CalculatePoints(*eCurve)
 		utils.LogOnError(logger, err, fmt.Sprintf("error from CalculatePoints: %v\n", err), true)
 

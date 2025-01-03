@@ -20,7 +20,7 @@ func main() {
 // This used to just be a way to functionally smoke tes the fact that bigarith worked
 // I'm replacing it with math.big versions:
 // 1) to make sure I know my conversions work
-// 2) to keep it here for math.big testing in the future
+// 2) to keep it here for. math.big testing in the future
 func run() error {
 	logger := utils.InitialiseLogger("[BIGMATH]")
 

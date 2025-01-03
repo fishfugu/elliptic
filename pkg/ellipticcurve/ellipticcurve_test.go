@@ -14,6 +14,42 @@ type cubicTestCase struct {
 	expectedRoots []*big.Rat // List of expected roots
 }
 
+func BenchmarkSolveCubic(b *testing.B) {
+	// Example coefficients for benchmarking
+	testCases := []struct {
+		A, B *big.Int
+	}{
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(16), new(big.Int).SetInt64(40)},
+		{new(big.Int).SetInt64(-28), new(big.Int).SetInt64(48)},
+		{new(big.Int).SetInt64(49), new(big.Int).SetInt64(260)},
+		{new(big.Int).SetInt64(529), new(big.Int).SetInt64(-292)},
+		{new(big.Int).SetInt64(-796), new(big.Int).SetInt64(-591)},
+		{new(big.Int).SetInt64(-511), new(big.Int).SetInt64(392)},
+		{new(big.Int).SetInt64(-914), new(big.Int).SetInt64(-245)},
+		{new(big.Int).SetInt64(-588), new(big.Int).SetInt64(-908)},
+		{new(big.Int).SetInt64(-600), new(big.Int).SetInt64(40000)},
+	}
+
+	for _, tc := range testCases {
+		b.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
+			// Create the elliptic curve
+			ec := ellipticcurve.NewEllipticCurve(tc.A, tc.B)
+
+			// Reset the timer to exclude setup time
+			b.ResetTimer()
+
+			// Run the benchmark
+			for i := 0; i < b.N; i++ {
+				_, err := ec.SolveCubic()
+				if err != nil {
+					b.Fatalf("Error solving cubic: %v", err)
+				}
+			}
+		})
+	}
+}
+
 // Test function for multiple test cases
 func TestSolveCubic_OneRealRoot(t *testing.T) {
 	// Define a list of test cases
@@ -52,59 +88,57 @@ func TestSolveCubic_OneRealRoot(t *testing.T) {
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-5),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(16),
 			B: new(big.Int).SetInt64(40),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-2),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(36),
 			B: new(big.Int).SetInt64(80),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-2),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(49),
 			B: new(big.Int).SetInt64(106),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-2),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(49),
 			B: new(big.Int).SetInt64(174),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-3),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(49),
 			B: new(big.Int).SetInt64(260),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-4),
 			},
-		}, {
+		},
+		{
 			A: new(big.Int).SetInt64(64),
 			B: new(big.Int).SetInt64(219),
 			expectedRoots: []*big.Rat{
 				new(big.Rat).SetInt64(-3),
 			},
 		},
+		{
+			A: new(big.Int).SetInt64(-600),
+			B: new(big.Int).SetInt64(40000),
+			expectedRoots: []*big.Rat{
+				new(big.Rat).SetInt64(-40),
+			},
+		},
 	}
-
-	// testCases := []cubicTestCase{
-	// {
-	// 	A:                     "49",
-	// 	B:                     "260",
-	// 	expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 	expectedRoots:         []string{"-4"},
-	// },
-	// {
-	// 	A:                     "64",
-	// 	B:                     "219",
-	// 	expectedNumberOfRoots: 1, // Expected single real root at x = -1 for equation x^3 + 0x + 64 = 0
-	// 	expectedRoots:         []string{"-3"},
-	// },
-	// }
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
@@ -131,8 +165,7 @@ func TestSolveCubic_OneRealRoot(t *testing.T) {
 						foundMatch = true
 					} else {
 						diff := new(big.Rat).Abs(new(big.Rat).Sub(roots[i], tc.expectedRoots[j]))
-						diffFloat := new(big.Float).SetRat(diff)
-						lastErrorMessage = fmt.Sprintf("Expedcted first root %s, got %s, diff %s (as a float: %v)", tc.expectedRoots[j], roots[i], diff, diffFloat)
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s, diff %s", tc.expectedRoots, roots[i].FloatString(100), diff.FloatString(100))
 					}
 				}
 				if !foundMatch {
@@ -156,24 +189,24 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 				new(big.Rat).SetInt64(4),
 			},
 		},
-		// {
-		// 	A: new(big.Int).SetInt64(-7),
-		// 	B: new(big.Int).SetInt64(-6),
-		// 	expectedRoots: []*big.Rat{
-		// 		new(big.Rat).SetInt64(-2),
-		// 		new(big.Rat).SetInt64(-1),
-		// 		new(big.Rat).SetInt64(3),
-		// 	},
-		// },
-		// {
-		// 	A: new(big.Int).SetInt64(-75),
-		// 	B: new(big.Int).SetInt64(20),
-		// 	expectedRoots: []*big.Rat{
-		// 		new(big.Rat).SetInt64(-10),
-		// 		new(big.Rat).SetInt64(5),
-		// 		new(big.Rat).SetInt64(5),
-		// 	},
-		// },
+		{
+			A: new(big.Int).SetInt64(-75),
+			B: new(big.Int).SetInt64(250),
+			expectedRoots: []*big.Rat{
+				new(big.Rat).SetInt64(-10),
+				new(big.Rat).SetInt64(5),
+				new(big.Rat).SetInt64(5),
+			},
+		},
+		{
+			A: new(big.Int).SetInt64(-12),
+			B: new(big.Int).SetInt64(16),
+			expectedRoots: []*big.Rat{
+				new(big.Rat).SetInt64(-4),
+				new(big.Rat).SetInt64(2),
+				new(big.Rat).SetInt64(2),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -201,7 +234,7 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 						foundMatch = true
 					} else {
 						diff := new(big.Rat).Abs(new(big.Rat).Sub(roots[i], tc.expectedRoots[j]))
-						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s, diff %s", tc.expectedRoots, roots[i], diff)
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s, diff %s", tc.expectedRoots, roots[i].FloatString(100), diff.FloatString(100))
 					}
 				}
 				if !foundMatch {
@@ -215,11 +248,24 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 	// Define a list of test cases
 	testCases := []cubicTestCase{
-		// {
-		// 	A:             "-28",
-		// 	B:             "48",
-		// 	expectedRoots: []string{"-6", "2", "4"},
-		// },
+		{
+			A: new(big.Int).SetInt64(-28),
+			B: new(big.Int).SetInt64(48),
+			expectedRoots: []*big.Rat{
+				new(big.Rat).SetInt64(-6),
+				new(big.Rat).SetInt64(2),
+				new(big.Rat).SetInt64(4),
+			},
+		},
+		{
+			A: new(big.Int).SetInt64(-7),
+			B: new(big.Int).SetInt64(-6),
+			expectedRoots: []*big.Rat{
+				new(big.Rat).SetInt64(-2),
+				new(big.Rat).SetInt64(-1),
+				new(big.Rat).SetInt64(3),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -246,7 +292,8 @@ func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 					if roots[i].Cmp(tc.expectedRoots[j]) == 0 {
 						foundMatch = true
 					} else {
-						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s", tc.expectedRoots, roots[i])
+						diff := new(big.Rat).Abs(new(big.Rat).Sub(roots[i], tc.expectedRoots[j]))
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s, diff %s", tc.expectedRoots, roots[i].FloatString(100), diff.FloatString(100))
 					}
 				}
 				if !foundMatch {

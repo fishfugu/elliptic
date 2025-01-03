@@ -7,14 +7,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const outputDebugInfo = true
+
 // InitializeLogger sets up the logger and returns it for use in other parts of the application.
 func InitialiseLogger(prefix string) *logrus.Logger {
 	// Create a logger that writes to stdout
 	var log = &logrus.Logger{
-		Out:       os.Stderr,
+		Out:       os.Stdout,
 		Formatter: new(logrus.TextFormatter),
 		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.DebugLevel,
+		Level:     logrus.WarnLevel,
 	}
 	return log
 }
@@ -61,4 +63,9 @@ func Max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// newFloat creates a new big.Float with the default precision.
+func NewFloat() *big.Float {
+	return new(big.Float).SetPrec(0)
 }

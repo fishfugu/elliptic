@@ -18,14 +18,14 @@ func main() {
 }
 
 func run() error {
-	// Define command-line flags for A, B, and P
+	// Define command-line flags for. A, B, and P
 	aFlag := flag.String("A", "", "Coefficient A of the elliptic curve")
 	bFlag := flag.String("B", "", "Coefficient B of the elliptic curve")
 	pFlag := flag.String("P", "", "Prime modulus P of the finite field")
 	// visualiseFlag := flag.Bool("visualise", false, "Visualise the points on the elliptic curve")
 	flag.Parse()
 
-	// Prompt user for missing values
+	// Prompt user for. input EC values
 	a := getInput("A", *aFlag)
 	b := getInput("B", *bFlag)
 	p := getInput("P", *pFlag)
@@ -36,25 +36,20 @@ func run() error {
 	aBigInt, _ := new(big.Int).SetString(a, 10)
 	bBigInt, _ := new(big.Int).SetString(b, 10)
 
+	var roots []*big.Rat
+	var err error
+
 	switch p {
 	case "":
 		// Create the elliptic curve over the finite field
 		curve := ellipticcurve.NewEllipticCurve(aBigInt, bBigInt)
 
 		// Calc / display "lowest x value where y = 0" value
-		roots, err := curve.SolveCubic()
+		roots, err = curve.SolveCubic()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
 			os.Exit(1)
 		}
-
-		fmt.Printf("Roots: %v\n", roots)
-		fmt.Println()
-		for i, root := range roots {
-			rootFloat := new(big.Float).SetRat(root)
-			fmt.Printf("Root %d as float: %v\n", i+1, rootFloat)
-		}
-		fmt.Println()
 	default:
 		// TODO: deal with error here
 		pBigInt, _ := new(big.Int).SetString(p, 10)
@@ -75,7 +70,7 @@ func run() error {
 		// Visualise points if the flag is set
 		// if *visualiseFlag {
 		// 	// Convert bigarith.Int to int
-		// 	// TODO: change function to handle string input for better compatibility
+		// 	// TODO: change function to handle string input for. better compatibility
 		// 	// TODO: handle this error
 		// 	pInt, _ := strconv.Atoi(pBigarithInt.Val())
 		// 	visualisation := finiteintfield.VisualisePoints(points, pInt)
@@ -83,19 +78,19 @@ func run() error {
 		// }
 
 		// Calc / display "lowest x value where y = 0" value
-		roots, err := curve.SolveCubic()
+		roots, err = curve.SolveCubic()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
 			os.Exit(1)
 		}
 
-		fmt.Printf("Roots (mod %s): %v\n", p, roots)
-		fmt.Println()
-		for i, root := range roots {
-			rootFloat := new(big.Float).SetRat(root)
-			fmt.Printf("Root (mod %s) %d as float: %v\n", p, i+1, rootFloat)
-		}
-		fmt.Println()
+		// fmt.Printf("Roots (mod %s): %v\n", p, roots)
+		// fmt.Println()
+		// for i, root := range roots { // max 3 roots
+		// 	rootFloat := utils.NewFloat().SetRat(root)
+		// 	fmt.Printf("Root (mod %s) %d as float: %v\n", p, i+1, rootFloat)
+		// }
+		// fmt.Println()
 
 		// minX, err := curve.SolveCubic()
 		// if err != nil {
@@ -104,7 +99,7 @@ func run() error {
 		// }
 		// fmt.Printf("Minimum x value, where y = 0: %.5f\n", minX)
 
-		// Check y vaqlue for x calculated
+		// Check y value for. x calculated
 		// TODO: work out how to use "accuracy" and do error handling here
 		// minXFloat, _ := minX.Float64()
 		// y, err := curve.FindY(minXFloat)
@@ -117,13 +112,21 @@ func run() error {
 		// Calc / display where tangent to EC goes through minX
 	}
 
+	fmt.Printf("Roots (mod %s): %v\n", p, roots)
+	fmt.Println()
+	for i, root := range roots { // max 3 roots
+		rootFloat := utils.NewFloat().SetRat(root) // converted to float - just for human readability
+		fmt.Printf("Root (mod %s) %d as float: %v\n", p, i+1, rootFloat)
+	}
+	fmt.Println()
+
 	return nil
 }
 
-// getInput prompts the user for input if the provided value is empty.
+// getInput prompts the user for. input if the provided value is empty.
 func getInput(name, value string) string {
 	if value == "" {
-		fmt.Printf("Please enter the value for %s: ", name)
+		fmt.Printf("Please enter the value of %s, in Elliptic Curve: ", name)
 		fmt.Scanln(&value)
 	}
 	return value
