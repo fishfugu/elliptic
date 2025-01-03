@@ -3,10 +3,8 @@ package pnumsys
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"os"
-	"strconv"
-
-	ba "elliptic/pkg/bigarith"
 )
 
 // In Go, the maximum value for an int64 type is 2^63 - 1,
@@ -19,24 +17,25 @@ import (
 
 // PrimeMultiplicativeNumber is a prime multiplicative system number representation
 type primeMultiplicativeNumber struct {
-	intList []int   // the int list representing the prime multiplicative system number - only up to 9
-	intVal  *ba.Int // an integer which when printed in base 10 represents the prime multiplicative system number
+	intList []int64  // the int list representing the prime multiplicative system number - only up to 9
+	intVal  *big.Int // an integer which when printed in base 10 represents the prime multiplicative system number
 }
 
-func NewPrimeMultiplicativeNumber(ints []int) primeMultiplicativeNumber {
-	tempIntVal := ba.NewInt("0")
+func NewPrimeMultiplicativeNumber(ints []int64) primeMultiplicativeNumber {
+	tempIntVal := new(big.Int).SetInt64(0)
 	for pos, thisInt := range ints {
 		if thisInt > 0 {
 			// tempIntVal += thisInt * int64(math.Pow(10, 170-float64(pos)))
-			numeralPosString := strconv.Itoa(171 - pos)
-			multiplier := ba.NewInt("10").ToThePowerOf(numeralPosString, "")  // 10^{170-pos}
-			adder := ba.NewInt(strconv.Itoa(thisInt)).Times(multiplier.Val()) // thisInt * 10^{170-pos}
-			tempIntVal = tempIntVal.Plus(adder.Val())                         // tempIntVal += thisInt * 10^{170-pos}
+			numeralPosStringInt := new(big.Int).SetInt64(int64(170) - int64(pos)) // 170 - pos
+			tenInt := new(big.Int).SetInt64(10)                                   // 10
+			multiplier := new(big.Int).Exp(tenInt, numeralPosStringInt, nil)      // 10^{170-pos}
+			adder := new(big.Int).Mul(new(big.Int).SetInt64(thisInt), multiplier) // thisInt * 10^{170-pos}
+			tempIntVal = tempIntVal.Add(tempIntVal, adder)                        // tempIntVal += thisInt * 10^{170-pos}
 		}
 	}
 	return primeMultiplicativeNumber{
 		intList: ints,
-		intVal:  &tempIntVal,
+		intVal:  tempIntVal,
 	}
 }
 
@@ -129,7 +128,7 @@ func Factorise(n int) []int {
 
 // ConvertToNewSystem converts a base-10 number to the new system representation.
 func ConvertToNewSystem(n int) ([]int, primeMultiplicativeNumber) {
-	exponentCounts := make([]int, 172)
+	exponentCounts := make([]int64, 172)
 	factors := Factorise(n)
 	for _, factor := range factors {
 		// make the counts in reverse orderd
@@ -170,7 +169,7 @@ func GenerateOverflowLaTeXTable(filename string) error {
 			value := math.Pow(float64(prime), float64(exp))
 			modValue := int(value) % modulus
 			primeFactors, newNumberSystemVal := ConvertToNewSystem(modValue)
-			fmt.Fprintf(file, "\\(%d^{%d}\\) & %.1f & %d & %v & %s \\\\\n", prime, exp, value, modValue, primeFactors, newNumberSystemVal.intVal.Val())
+			fmt.Fprintf(file, "\\(%d^{%d}\\) & %.1f & %d & %v & %s \\\\\n", prime, exp, value, modValue, primeFactors, newNumberSystemVal.intVal.String())
 		}
 	}
 	fmt.Fprintln(file, "\\end{longtable}")
