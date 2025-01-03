@@ -44,3 +44,12 @@ coverage.html
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# binary files don't need to go in repo
+bin/*
+
+# ignore scripts
+ignorescripts/*
+
+# latex output should be temp
+doc/latex

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"elliptic/pkg/ellipticcurve"
-	"elliptic/pkg/finiteintfield"
 	"fmt"
 	"image/color"
 	"math/big"
@@ -12,14 +10,25 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+
+	"elliptic/pkg/ellipticcurve"
+	"elliptic/pkg/finiteintfield"
+	"elliptic/pkg/utils"
 )
 
 func main() {
+	logger := utils.InitialiseLogger("[ECVIS]")
+
+	err := run()
+	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
+}
+
+func run() error {
 	myApp := app.New()
-	myWindow := myApp.NewWindow("Elliptic Curve Visualization in Finite Field")
+	myWindow := myApp.NewWindow("Elliptic Curve Visualisation in Finite Field")
 
 	// Initialise curve parameters and create curve
-	a, b, p := big.NewInt(1), big.NewInt(1), big.NewInt(13)
+	a, b, p := new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(13)
 	curve := ellipticcurve.NewFiniteFieldEC(a, b, p)
 
 	// Calculate points on the curve
@@ -27,7 +36,7 @@ func main() {
 	if err != nil {
 		myWindow.SetContent(canvas.NewText("Error calculating points: "+err.Error(), color.White))
 		myWindow.ShowAndRun()
-		return
+		return nil
 	}
 
 	// Set up the canvas
@@ -36,11 +45,18 @@ func main() {
 	pointDetails := ""
 
 	// Plot the points and collect point details
-	for _, point := range points {
-		x, _ := new(big.Int).SetString(point[0], 10)
-		y, _ := new(big.Int).SetString(point[1], 10)
-		xCanvas := float32(x.Int64()) * (float32(w) / float32(p.Int64()))
-		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(p.Int64()))) // Flipping y to have the origin at the bottom left
+	for _, point := range points { // could be arbitrarily large number of points
+		// do I need to work out a way to store more than MAXINT number of points?
+
+		// point[0] is x, point[1] is y
+		x := new(big.Int).Set(point[0]) // dupe point[0] into x
+		y := new(big.Int).Set(point[1]) // dupe point[1] into y
+		// Convert p to int64
+		// TODO: does p need to arbitrarily large too?
+		// TODO: deal with "accuracy" details - i.e. the "_" return value
+		pFloat, _ := new(big.Int).Set(p).Float64()
+		xCanvas := float32(x.Int64()) * (float32(w) / float32(pFloat))
+		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(pFloat))) // Flipping y to have the origin at the bottom left
 		fynePoint := canvas.NewCircle(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
 		fynePoint.Resize(fyne.NewSize(5, 5))
 		fynePoint.Move(fyne.NewPos(xCanvas, yCanvas))
@@ -48,11 +64,11 @@ func main() {
 		pointDetails += fmt.Sprintf("(%v, %v), ", x, y)
 	}
 
-	// Create a text label for displaying the point details
+	// Create a text label for. displaying the point details
 	pointLabel := widget.NewLabel(pointDetails)
 	pointLabel.Wrapping = fyne.TextWrapWord
 
-	// Create canvas for x-y axes
+	// Create canvas for. x-y axes
 	axes := canvas.NewLine(color.Gray{Y: 123})
 	axes.StrokeWidth = 1
 	axes.Position1 = fyne.NewPos(0, h/2) // horizontal line
@@ -71,4 +87,6 @@ func main() {
 	myWindow.SetContent(split)
 	myWindow.Resize(fyne.NewSize(w, h))
 	myWindow.ShowAndRun()
+
+	return nil
 }

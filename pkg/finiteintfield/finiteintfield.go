@@ -1,48 +1,77 @@
 package finiteintfield
 
 import (
-	"elliptic/pkg/bigarith"
-	"elliptic/pkg/ellipticcurve"
-
 	"fmt"
 	"math/big"
+
+	"elliptic/pkg/ellipticcurve"
+	"elliptic/pkg/utils"
 )
 
 // CalculatePoints calculates all points on an elliptic curve y^2 = x^3 + Ax + B over a finite field defined by prime p
-func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]string, error) {
-	var points [][2]string
+func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]*big.Int, error) {
+	var points [][2]*big.Int
 
 	A, B, p := FFEC.GetDetails()
 
-	for x := "0"; ; {
+	// set up y^2 lookup
+	ySquaredLookup := make(map[*big.Int][]*big.Int)
+	for y := new(big.Int).SetInt64(0); y.Cmp(p) < 0; y = new(big.Int).Add(y, new(big.Int).SetInt64(1)) {
+		ySquared := new(big.Int).Exp(y, new(big.Int).SetInt64(2), p) // y squared mod p
+		ySquaredLookup[ySquared] = append(ySquaredLookup[ySquared], y)
+	}
+
+	for x := new(big.Int).SetInt64(0); x.Cmp(p) < 0; x = new(big.Int).Add(x, new(big.Int).SetInt64(1)) {
 		// Calculate rhs: x^3 + Ax + B
-		x3, _ := bigarith.Exp(x, "3", p.String()) // x^3 mod p
-		Ax, _ := bigarith.Multiply(A.String(), x)
-		Ax, _ = bigarith.Mod(Ax, p.String()) // (A*x) mod p
-		rhs, _ := bigarith.Add(x3, Ax)
-		rhs, _ = bigarith.Add(rhs, B.String())
-		rhs, _ = bigarith.Mod(rhs, p.String()) // (x^3 + Ax + B) mod p
+		xCubed := new(big.Int).Exp(x, new(big.Int).SetInt64(3), p) // x^3 mod p
+		Ax := new(big.Int).Mul(A, x)                               // A times x
+		xCubedPlusAx := new(big.Int).Add(xCubed, Ax)               // x^3 + Ax
+		xCubedPlusAxPlusB := new(big.Int).Add(xCubedPlusAx, B)     // x^3 + Ax + B
+		rhs := new(big.Int).Mod(xCubedPlusAxPlusB, p)              // (x^3 + Ax + B) mod p
 
 		// Check for y^2 = rhs
-		for y := "0"; ; {
-			y2, _ := bigarith.Exp(y, "2", p.String()) // y^2 mod p
-			if cmp, _ := bigarith.Cmp(y2, rhs); cmp == 0 {
-				points = append(points, [2]string{x, y})
+		if yList, ok := ySquaredLookup[rhs]; ok {
+			// yList contains list of y values for which y^2 = rhs exists
+			for _, y := range yList {
+				points = append(points, [2]*big.Int{x, y})
 			}
-
-			y, _ = bigarith.Add(y, "1")
-			if cmp, _ := bigarith.Cmp(y, p.String()); cmp >= 0 {
-				break
-			}
-		}
-
-		x, _ = bigarith.Add(x, "1")
-		if cmp, _ := bigarith.Cmp(x, p.String()); cmp >= 0 {
-			break
 		}
 	}
 
 	return points, nil
+}
+
+// DivideInField takes two big ints, divides a by b,
+// and returns the result as a string in a finite field defined by a prime modulus p.
+// Returns an error if the input strings are not valid integers, or if b has no inverse modulo p,
+// (which includes if b is 0).
+func DivideInField(a, b, p *big.Int) (*big.Int, error) {
+	// First, find the multiplicative inverse of b mod p
+	bInv, err := ModularInverse(b, p)
+	if err != nil {
+		return nil, fmt.Errorf("error finding inverse: %v", err)
+	}
+
+	// Calculate a * bInv mod p
+	result := new(big.Int).Mul(a, bInv) // a * b^-1
+	return result.Mod(result, p), nil
+}
+
+// ModularInverse calculates the multiplicative inverse of a modulo p using Fermat's Little Theorem
+// and returns it as a string. Returns an error if p is not prime or a and p are not coprime.
+func ModularInverse(a, p *big.Int) (*big.Int, error) {
+	// Check if p is prime; if not, the multiplicative inverse might not exist
+	// https://pkg.go.dev/math/big#Int.ProbablyPrime
+	// From ---^ that site: "The probability of returning true for a randomly chosen non-prime is at most ¼ⁿ"
+	// i.e. (1/4)^n - where n is the parameter handed in to the function
+	// TODO: work out if there's a way to decide what that param should be set to
+	if !p.ProbablyPrime(1000) {
+		return nil, fmt.Errorf("invalid input: modulus %s is not prime", p)
+	}
+
+	// Calculate a^(p-2) mod p
+	pMinusTwo := new(big.Int).Sub(p, big.NewInt(2)) // p-2
+	return new(big.Int).Exp(a, pMinusTwo, p), nil   // Calculate a^(p-2) mod p
 }
 
 // THIS IS A HALF FINSIHED THOUGHT
@@ -113,19 +142,19 @@ func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]string, error) {
 // }
 
 // FormatPoints formats a list of points for easy command line reading
-func FormatPoints(points [][2]string) string {
+func FormatPoints(points [][2]*big.Int) string {
 	result := "List of Points on the Curve:\n"
 	for _, point := range points {
-		result += fmt.Sprintf("Point (x, y): (%s, %s)\n", point[0], point[1])
+		result += fmt.Sprintf("Point (x, y): (%s, %s)\n", point[0].String(), point[1].String())
 	}
 	return result
 }
 
 // VisualisePoints displays the points on a 2D text-based plane, including axes, reflection line, and scale indicators.
 // TODO: turn this into something that accepts and uses a bigarith not an int
-func VisualisePoints(points [][2]string, p int) string {
-	plane := make([][]rune, p+1) // +1 to include the x-axis
-	tickInterval := max(1, p/10) // Adjust the interval based on p, avoiding too many ticks
+func VisualisePoints(points [][2]*big.Int, p int) string {
+	plane := make([][]rune, p+1)       // +1 to include the x-axis
+	tickInterval := utils.Max(1, p/10) // Adjust the interval based on p, avoiding too many ticks
 
 	for i := range plane {
 		plane[i] = make([]rune, p+1) // +1 to include the y-axis
@@ -153,14 +182,14 @@ func VisualisePoints(points [][2]string, p int) string {
 
 	// Plot the points
 	for _, point := range points {
-		x, _ := new(big.Int).SetString(point[0], 10)
-		y, _ := new(big.Int).SetString(point[1], 10)
+		x := new(big.Int).Set(point[0])
+		y := new(big.Int).Set(point[1])
 		xInt, yInt := int(x.Int64()), int(y.Int64())
 		plane[p-yInt][xInt] = '*'
 	}
 
 	// Construct the visual output
-	result := "\n2D Plane Visualization with Cartesian Axes, Reflection Line, and Scale:\n"
+	result := "\n2D Plane Visualisation with Cartesian Axes, Reflection Line, and Scale:\n"
 	for i, line := range plane {
 		for j, char := range line {
 			result += string(char) + " "
@@ -183,7 +212,3 @@ func VisualisePoints(points [][2]string, p int) string {
 
 	return result
 }
-
-// func FindY(FFEC ellipticcurve.FiniteFieldEC) (float64, error) {
-
-// }
