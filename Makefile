@@ -39,7 +39,7 @@ build-pns:	## Build prime nummber system (psumsys - pns) executable
 ##@ RUN
 
 .PHONY: run-bigmath
-run-bigmath: build-bigmath test-verbose	## Run bigmath binary - ensuring latest build is executed - running tests first
+run-bigmath: build-bigmath test-quiet	## Run bigmath binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "************************************************************"
 	@echo "✓✓✓✓✓ -- Bigmath built, and tested - continuing on to run..."
@@ -50,7 +50,7 @@ run-bigmath: build-bigmath test-verbose	## Run bigmath binary - ensuring latest 
 	@echo "Run of bigmath complete."
 
 .PHONY: run-finitefield
-run-finitefield: build-finitefield test-quiet	## Run finitefield binary - ensuring latest build is executed - running tests first
+run-finitefield: build-finitefield test-fast	## Run finitefield binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
 	@echo "✓✓✓✓✓ -- Finitefield built, and tested - continuing on to run..."
@@ -61,7 +61,7 @@ run-finitefield: build-finitefield test-quiet	## Run finitefield binary - ensuri
 	@echo "Run of finitefield complete."
 
 .PHONY: run-ecvis
-run-ecvis: build-ecvis test-quiet	## Run Elliptic Curve Data Vis Tool - ensuring latest build is executed - running tests first
+run-ecvis: build-ecvis test-fast	## Run Elliptic Curve Data Vis Tool - ensuring latest build is executed - running tests first
 	@echo
 	@echo "****************************************************************"
 	@echo "✓✓✓✓✓ -- EC Vis Tool built, and tested - continuing on to run..."
@@ -72,7 +72,7 @@ run-ecvis: build-ecvis test-quiet	## Run Elliptic Curve Data Vis Tool - ensuring
 	@echo "Elliptic Curve Data Vis Tool running"
 
 .PHONY: run-cli
-run-cli: build-cli test-quiet	## Run Elliptic Curve CLI - ensuring latest build is executed - running tests first
+run-cli: build-cli test-fast	## Run Elliptic Curve CLI - ensuring latest build is executed - running tests first
 	@echo
 	@echo "***********************************************************************"
 	@echo "✓✓✓✓✓ -- Elliptic Curve CLI built, and tested - continuing on to run..."
@@ -94,7 +94,7 @@ test:	## Run unit tests for all packages under pkg
 
 .PHONY: test-performance
 test-performance:	## run unit tests and extract duration / avg perforamcnce stats
-	go test -v -timeout=10m -bench=. -count=1 ./pkg/bigarith/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
+	go test -v -timeout=10m -bench=. -count=1 ./pkg/ellipticcurve/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
 
 .PHONY: clean
 clean:	## Remove binaries and any temporary files
@@ -112,6 +112,11 @@ test-drive: help build-all run-bigmath run-finitefield run-ecvis test clean	## R
 
 ## Helper make targets - not to be run as part of test-drive
 ## They either replicate other stuff or are just inappropriate for running without thinking about it
+
+.PHONY: test-fast
+test-fast:	## Run unit tests for all packages under pkg - but quietly - quits at first error
+	go clean -testcache
+	go test -failfast -timeout=10m ./pkg/...
 
 .PHONY: test-quiet
 test-quiet:	## Run unit tests for all packages under pkg - but quietly - quits at first error

@@ -1,7 +1,6 @@
-package ellipticcurve_test
+package ellipticcurve
 
 import (
-	"elliptic/pkg/ellipticcurve"
 	"fmt"
 	"math/big"
 	"testing"
@@ -19,8 +18,13 @@ func BenchmarkSolveCubic(b *testing.B) {
 	testCases := []struct {
 		A, B *big.Int
 	}{
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)},
 		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(1), new(big.Int).SetInt64(1)},
 		{new(big.Int).SetInt64(16), new(big.Int).SetInt64(40)},
+		{new(big.Int).SetInt64(-48), new(big.Int).SetInt64(128)},
+		{new(big.Int).SetInt64(-75), new(big.Int).SetInt64(250)},
+		{new(big.Int).SetInt64(-12), new(big.Int).SetInt64(16)},
 		{new(big.Int).SetInt64(-28), new(big.Int).SetInt64(48)},
 		{new(big.Int).SetInt64(49), new(big.Int).SetInt64(260)},
 		{new(big.Int).SetInt64(529), new(big.Int).SetInt64(-292)},
@@ -34,7 +38,7 @@ func BenchmarkSolveCubic(b *testing.B) {
 	for _, tc := range testCases {
 		b.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
 			// Create the elliptic curve
-			ec := ellipticcurve.NewEllipticCurve(tc.A, tc.B)
+			ec := NewEllipticCurve(tc.A, tc.B)
 
 			// Reset the timer to exclude setup time
 			b.ResetTimer()
@@ -45,6 +49,74 @@ func BenchmarkSolveCubic(b *testing.B) {
 				if err != nil {
 					b.Fatalf("Error solving cubic: %v", err)
 				}
+			}
+		})
+	}
+}
+
+func BenchmarkSolveCubicDetails(b *testing.B) {
+	testCases := []struct {
+		A, B *big.Int
+	}{
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)},
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(1), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(16), new(big.Int).SetInt64(40)},
+		{new(big.Int).SetInt64(-48), new(big.Int).SetInt64(128)}, // Example with double root
+		{new(big.Int).SetInt64(-75), new(big.Int).SetInt64(250)}, // Example with double root
+		{new(big.Int).SetInt64(-12), new(big.Int).SetInt64(16)},  // Example with double root
+	}
+
+	for _, tc := range testCases {
+		ec := NewEllipticCurve(tc.A, tc.B)
+
+		b.Run(fmt.Sprintf("Discriminant A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				A, B := ec.GetDetailsAsRats()
+				aCubed := new(big.Rat).Mul(A, new(big.Rat).Mul(A, A))
+				bSquared := new(big.Rat).Mul(B, B)
+				fourACubed := new(big.Rat).Mul(new(big.Rat).SetInt64(4), aCubed)
+				twentySevenBCubed := new(big.Rat).Mul(new(big.Rat).SetInt64(27), bSquared)
+				_ = new(big.Rat).Add(fourACubed, twentySevenBCubed) // Calculate discriminant
+			}
+		})
+
+		b.Run(fmt.Sprintf("Newton A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				A, B := ec.GetDetails()
+				_, _ = newtonCubic(A, B)
+			}
+		})
+
+		b.Run(fmt.Sprintf("Double Root A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				root1 := big.NewRat(4, 1) // Simulate root1
+				xSquared := new(big.Rat).Mul(root1, root1)
+				threeXSquared := new(big.Rat).Mul(threeRat, xSquared)
+				gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(tc.A))
+				_ = approximateRat(gradient) // Simulate operations
+			}
+		})
+	}
+}
+
+func BenchmarkNewtonCubic(b *testing.B) {
+	testCases := []struct {
+		A, B *big.Int
+	}{
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)},
+		{new(big.Int).SetInt64(0), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(1), new(big.Int).SetInt64(1)},
+		{new(big.Int).SetInt64(16), new(big.Int).SetInt64(40)},
+		{new(big.Int).SetInt64(-48), new(big.Int).SetInt64(128)}, // Example with double root
+		{new(big.Int).SetInt64(-75), new(big.Int).SetInt64(250)}, // Example with double root
+		{new(big.Int).SetInt64(-12), new(big.Int).SetInt64(16)},  // Example with double root
+	}
+
+	for _, tc := range testCases {
+		b.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, _ = newtonCubic(tc.A, tc.B)
 			}
 		})
 	}
@@ -143,7 +215,7 @@ func TestSolveCubic_OneRealRoot(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
 			// Create a new elliptic curve object with A and B
-			ec := ellipticcurve.NewEllipticCurve(tc.A, tc.B)
+			ec := NewEllipticCurve(tc.A, tc.B)
 
 			// Solve the cubic equation
 			roots, err := ec.SolveCubic()
@@ -169,7 +241,7 @@ func TestSolveCubic_OneRealRoot(t *testing.T) {
 					}
 				}
 				if !foundMatch {
-					t.Errorf(lastErrorMessage)
+					t.Error(lastErrorMessage)
 				}
 			}
 		})
@@ -212,7 +284,7 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
 			// Create a new elliptic curve object with A and B
-			ec := ellipticcurve.NewEllipticCurve(tc.A, tc.B)
+			ec := NewEllipticCurve(tc.A, tc.B)
 
 			// Solve the cubic equation
 			roots, err := ec.SolveCubic()
@@ -238,7 +310,7 @@ func TestSolveCubic_DoubleRoot(t *testing.T) {
 					}
 				}
 				if !foundMatch {
-					t.Errorf(lastErrorMessage)
+					t.Error(lastErrorMessage)
 				}
 			}
 		})
@@ -271,7 +343,7 @@ func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("A=%s, B=%s", tc.A, tc.B), func(t *testing.T) {
 			// Create a new elliptic curve object with A and B
-			ec := ellipticcurve.NewEllipticCurve(tc.A, tc.B)
+			ec := NewEllipticCurve(tc.A, tc.B)
 
 			// Solve the cubic equation
 			roots, err := ec.SolveCubic()
@@ -287,17 +359,17 @@ func TestSolveCubic_ThreeRealRoots(t *testing.T) {
 			// Check if real roots match the expected value
 			for i := range roots {
 				foundMatch := false
-				lastErrorMessage := "NONE"
+				lastErrorMessage := "NONE - should not have triggered "
 				for j := range tc.expectedRoots {
 					if roots[i].Cmp(tc.expectedRoots[j]) == 0 {
 						foundMatch = true
 					} else {
 						diff := new(big.Rat).Abs(new(big.Rat).Sub(roots[i], tc.expectedRoots[j]))
-						lastErrorMessage = fmt.Sprintf("Expedcted roots: %s, got %s, diff %s", tc.expectedRoots, roots[i].FloatString(100), diff.FloatString(100))
+						lastErrorMessage = fmt.Sprintf("Expedcted roots: %v, got %s, diff %s", tc.expectedRoots, roots[i].FloatString(100), diff.FloatString(100))
 					}
 				}
 				if !foundMatch {
-					t.Errorf(lastErrorMessage)
+					t.Error(lastErrorMessage)
 				}
 			}
 		})

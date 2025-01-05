@@ -53,3 +53,6 @@ ignorescripts/*
 
 # latex output should be temp
 doc/latex
+
+# CPU Profiling
+cpu.prof
