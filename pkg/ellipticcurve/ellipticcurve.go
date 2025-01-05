@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	zeroInt, oneInt, twoInt, fourInt *big.Int
-	zeroRat, twoRat, threeRat        *big.Rat
-	toleranceFractionRat             *big.Rat
-	halfFloat                        *big.Float
+	oneInt, twoInt, fourInt   *big.Int
+	twoRat, threeRat, fourRat *big.Rat
+	toleranceFractionRat      *big.Rat
+	halfFloat                 *big.Float
 
 	// name these after their values - to avoid needing to go check values while reading
 	// update name of variable if changing value
@@ -22,31 +22,22 @@ var (
 )
 
 func init() {
-	zeroInt = new(big.Int).SetInt64(0)
-	oneInt = new(big.Int).SetInt64(1)
-	twoInt = new(big.Int).SetInt64(2)
-	fourInt = new(big.Int).SetInt64(4)
-
-	zeroRat = big.NewRat(0, 1)
-	twoRat = big.NewRat(2, 1)
-	threeRat = big.NewRat(3, 1)
+	oneInt, twoInt, fourInt = big.NewInt(1), big.NewInt(2), big.NewInt(4)
+	twoRat, threeRat, fourRat = big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
 
 	// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
 	// used for. keys in EC Cryptography in the highest security situations:
 	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
 	// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
 	// the highest security assurances."
-	precision_2048 = 2048
-	tolerance_1024 = 1024
+	precision_2048, tolerance_1024 = 2048, 1024
 
-	// set approximation preciion to 1024 - half of calc precision, still almost double the usual max
-	// precision used for. keys in EC Cryptography in the highest security situations:
-	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
-	tolleranceInt := new(big.Int).SetUint64(tolerance_1024)
-	// Check if input is within tolerance of a whole number
+	// Tolerance for approximation
+	tolleranceInt := big.NewInt(int64(tolerance_1024))
 	twoToThePowerOfTollerance := new(big.Int).Exp(twoInt, tolleranceInt, nil)
 	toleranceFractionRat = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTollerance)
 
+	// Commonly used float
 	halfFloat = utils.NewFloat().SetFloat64(0.5)
 }
 
@@ -131,7 +122,7 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 
 	logger.Debugf("First root: %s", approximateRat(root1).FloatString(400))
 
-	if discriminant.Cmp(zeroInt) == 0 {
+	if discriminant.Sign() == 0 {
 		// must have a double root
 		// see if root1 is double
 		xSquared := new(big.Rat).Mul(root1, root1)
@@ -139,9 +130,9 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(A))
 
 		logger.Debugf("Gradient: %s", gradient.FloatString(400))
-		logger.Debugf("Cmp: %d", gradient.Cmp(zeroRat))
+		logger.Debugf("Sign: %d", gradient.Sign())
 
-		if approximateRat(gradient).Cmp(zeroRat) == 0 {
+		if approximateRat(gradient).Sign() == 0 {
 			// root2 == root1 - AND root3 == - 2 * root1
 			roots = append(roots, approximateRat(root1))
 			root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
@@ -154,7 +145,7 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		}
 	}
 
-	if discriminant.Cmp(zeroInt) < 0 {
+	if discriminant.Sign() < 0 {
 		// must have 3 distinct roots
 		// Find the remaining two roots
 		remainingRoots, err := findRemainingRoots(new(big.Rat).SetInt(A), root1)
@@ -209,50 +200,31 @@ func (ffec FiniteFieldEC) FindY(x *big.Rat) (*big.Rat, error) {
 // modRatInt computes `a mod b` where `a` is a big.Rat and `b` is a big.Int.
 // The result is a big.Rat such that 0 <= result < b (converted to a big.Rat).
 func modRatInt(a *big.Rat, b *big.Int) *big.Rat {
-	// Convert b to big.Rat
-	bRat := new(big.Rat).SetInt(b)
-
-	// Compute the integer division: q = floor(a / b)
-	quotient := new(big.Rat).Quo(a, bRat)
-	quotientFloor := new(big.Rat).SetFrac(quotient.Num(), quotient.Denom())
-	quotientFloor.SetInt(quotientFloor.Num().Quo(quotientFloor.Num(), quotientFloor.Denom()))
-
-	// Compute the remainder: r = a - q * b
+	bRat := new(big.Rat).SetInt(b)        // Convert b to big.Rat
+	quotient := new(big.Rat).Quo(a, bRat) // Compute quotient
+	quotientFloor := new(big.Rat).SetInt(quotient.Num().Div(quotient.Num(), quotient.Denom()))
 	remainder := new(big.Rat).Sub(a, new(big.Rat).Mul(quotientFloor, bRat))
 
-	// Ensure the result is in the range [0, b)
-	if remainder.Cmp(big.NewRat(0, 1)) < 0 {
+	if remainder.Sign() < 0 { // Ensure result in [0, b)
 		remainder.Add(remainder, bRat)
 	}
-
 	return remainder
 }
 
 // sqrtRat computes the square root of a big.Rat with arbitrary precision.
 // If the result is not an exact rational number, it computes an approximation with the specified precision.
 func sqrtRat(input *big.Rat) (*big.Rat, error) {
-	logger := utils.InitialiseLogger("[sqrtRat]")
-	logger.Debug("starting function sqrtRat")
-
-	// Separate numerator and denominator
-	num := input.Num()   // Numerator
-	den := input.Denom() // Denominator
+	num, den := input.Num(), input.Denom()
 
 	// Check if numerator and denominator are perfect squares
-	sqrtNum := intSqrt(num)
-	sqrtDen := intSqrt(den)
-
-	if sqrtNum != nil && sqrtDen != nil {
-		// Exact rational square root
+	if sqrtNum, sqrtDen := intSqrt(num), intSqrt(den); sqrtNum != nil && sqrtDen != nil {
 		return new(big.Rat).SetFrac(sqrtNum, sqrtDen), nil
 	}
 
-	// Use Newton's method for. arbitrary precision square root
-	// see init for ideas behind precision level
+	// Approximation for non-perfect square roots
 	floatInput := new(big.Float).SetPrec(precision_2048).SetRat(input)
 	floatSqrt := sqrtFloat(floatInput, precision_2048)
 
-	// Convert the result back to big.Rat
 	result := new(big.Rat)
 	floatSqrt.Rat(result)
 	return result, nil
@@ -335,55 +307,38 @@ func quickEstimateRoot(A, B *big.Int) *big.Int {
 
 // newtonCubic finds one root for the cubic in the form x^3 + Ax + B
 func newtonCubic(A, B *big.Int) (*big.Rat, error) {
-	logger := utils.InitialiseLogger("[newtonCubic]")
-	logger.Info("starting function newtonCubic")
-
 	// Check for B == 0 which means f(x) = x^3 + Ax and so x == 0 is a root
 	if B.Sign() == 0 {
 		return new(big.Rat).SetInt64(0), nil
 	}
 
-	initialGuess := quickEstimateRoot(A, B)
-	x := new(big.Rat).SetInt(initialGuess)
+	x := new(big.Rat).SetInt(quickEstimateRoot(A, B))
 	delta := new(big.Rat).SetInt64(1) // just assume not 0 for now
-	for {
-		logger.Debugf("Starting Loop for x: %s", x.String())
 
-		// f(x) = x^3 + Ax + B
+	for {
 		fx := new(big.Rat).Add(
 			new(big.Rat).Add(
 				new(big.Rat).Mul(x, new(big.Rat).Mul(x, x)), // x^3
-				new(big.Rat).Mul(new(big.Rat).SetInt(A), x), // Ax
+				new(big.Rat).Mul(new(big.Rat).SetInt(A), x),
 			),
 			new(big.Rat).SetInt(B),
-		) // x^3 + Ax + B
-		logger.Debugf("FX: %s", fx.String())
-
-		// f'(x) = 3x^2 + A
+		)
 		fpx := new(big.Rat).Add(
 			new(big.Rat).Mul(threeRat, new(big.Rat).Mul(x, x)), // 3x^2
 			new(big.Rat).SetInt(A),
-		) // 3x^2 + A
-		logger.Debugf("FPX: %s", fpx.String())
+		)
 
-		if fpx.Cmp(zeroRat) != 0 {
-			delta = new(big.Rat).Quo(fx, fpx) // f(x) / f'(x)
-			logger.Debugf("Delta: %s", delta.FloatString(400))
+		if fpx.Sign() != 0 { // Avoid division by zero
+			delta.Quo(fx, fpx) // only do division if fpx not 0
 		}
 
-		x.Sub(x, delta) // x = x - (f(x) / f'(x))
-		logger.Debugf("X: %s", x.FloatString(400))
+		// either way, subtract last delta again, from x, and keep going
+		// and check for Rat simplification
+		x = approximateRat(new(big.Rat).Sub(x, delta))
 
-		// now check for Rat simplification
-		x = approximateRat(x)
-
-		deltaAbs := new(big.Rat).Abs(delta)
-		logger.Debugf("1 DeltaAbs: %s, toleranceFractionRat: %s", deltaAbs.FloatString(1000), toleranceFractionRat.FloatString(1000))
-
-		if deltaAbs.Cmp(toleranceFractionRat) == -1 { // Convergence tolerance - close enough?
+		if new(big.Rat).Abs(delta).Cmp(toleranceFractionRat) < 0 { // Convergence check
 			break
 		}
-		logger.Debugf("2 DeltaAbs: %s, toleranceFractionRat: %s", deltaAbs.FloatString(1000), toleranceFractionRat.FloatString(1000))
 	}
 	return x, nil
 }
@@ -391,34 +346,19 @@ func newtonCubic(A, B *big.Int) (*big.Rat, error) {
 // solveQuadratic calculates the roots of a quadratic equation of the form
 // x^2 + px + q = 0 and returns the two roots as big.Rat.
 func solveQuadratic(p, q *big.Rat) ([]*big.Rat, error) {
-	logger := utils.InitialiseLogger("[solveQuadratic]")
-	logger.Info("starting function solveQuadratic")
-
-	// Discriminant: D = p^2 - 4q
-	pSquared := new(big.Rat).Mul(p, p)                // p^2
-	fourQ := new(big.Rat).Mul(big.NewRat(4, 1), q)    // 4q
-	discriminant := new(big.Rat).Sub(pSquared, fourQ) // D = p^2 - 4q
-
-	logger.Debugf("discriminant: %s, p: %s, q: %s", discriminant.FloatString(400), p.FloatString(400), q.FloatString(400))
-
-	// Check if discriminant is negative (no real roots)
+	discriminant := new(big.Rat).Sub(new(big.Rat).Mul(p, p), new(big.Rat).Mul(fourRat, q))
 	if discriminant.Sign() < 0 {
-		return nil, fmt.Errorf("no real roots; discriminant is negative - p: %s, q: %s", p.FloatString(400), q.FloatString(400))
+		return nil, fmt.Errorf("no real roots; discriminant is negative")
 	}
 
-	// Square root of the discriminant
 	sqrtDiscriminant, err := sqrtRat(discriminant)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute square root: %v", err)
 	}
 
-	// Roots: x = (-p ± sqrt(D)) / 2
-	negP := new(big.Rat).Neg(p)                       // -p
-	root1 := new(big.Rat).Add(negP, sqrtDiscriminant) // -p + sqrt(D)
-	root1.Quo(root1, twoRat)                          // (-p + sqrt(D)) / 2
-
-	root2 := new(big.Rat).Sub(negP, sqrtDiscriminant) // -p - sqrt(D)
-	root2.Quo(root2, twoRat)                          // (-p - sqrt(D)) / 2
+	negP := new(big.Rat).Neg(p)
+	root1 := new(big.Rat).Quo(new(big.Rat).Add(negP, sqrtDiscriminant), twoRat)
+	root2 := new(big.Rat).Quo(new(big.Rat).Sub(negP, sqrtDiscriminant), twoRat)
 
 	return []*big.Rat{root1, root2}, nil
 }
@@ -444,19 +384,12 @@ func findRemainingRoots(A, root1 *big.Rat) ([]*big.Rat, error) {
 // see comments where it's applied as to how that precisions was estimated
 // TODO: build a function that can find the minimum required precision that passes all tests used
 func approximateRat(input *big.Rat) *big.Rat {
-	logger := utils.InitialiseLogger("[ApproximateRat]")
-	logger.Debug("starting function ApproximateRat")
-
-	// see init for details of tolerance calculations
-	nearestInt := new(big.Int).Div(input.Num(), input.Denom())
-	nearestIntRat := new(big.Rat).SetInt(nearestInt)
-	diff := new(big.Rat).Sub(input, nearestIntRat)
-	if diff.Abs(diff).Cmp(toleranceFractionRat) <= 0 {
-		return nearestIntRat
+	nearestInt := new(big.Rat).SetInt(new(big.Int).Div(input.Num(), input.Denom()))
+	if new(big.Rat).Abs(new(big.Rat).Sub(input, nearestInt)).Cmp(toleranceFractionRat) <= 0 {
+		return nearestInt
 	}
 
-	// If not near an integer, find the best rational approximation
-	return bestRationalApproximation(input)
+	return bestRationalApproximation(input) // Approximation if not near an integer
 }
 
 // bestRationalApproximation finds the best rational approximation of input within the given tolerance.
@@ -465,12 +398,9 @@ func bestRationalApproximation(input *big.Rat) *big.Rat {
 	logger.Debug("starting function bestRationalApproximation")
 
 	// Continued fraction expansion to find the best rational approximation
-	// Initialize variables
+	// Initialise variables
 	a := new(big.Int)
-	num0 := big.NewInt(0)
-	num1 := big.NewInt(1)
-	den0 := big.NewInt(1)
-	den1 := big.NewInt(0)
+	num0, num1, den0, den1 := big.NewInt(0), big.NewInt(1), big.NewInt(1), big.NewInt(0)
 	approx := new(big.Rat)
 
 	x := new(big.Rat).Set(input)

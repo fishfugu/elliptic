@@ -39,7 +39,7 @@ build-pns:	## Build prime nummber system (psumsys - pns) executable
 ##@ RUN
 
 .PHONY: run-bigmath
-run-bigmath: build-bigmath test-fast	## Run bigmath binary - ensuring latest build is executed - running tests first
+run-bigmath: build-bigmath test-quiet	## Run bigmath binary - ensuring latest build is executed - running tests first
 	@echo
 	@echo "************************************************************"
 	@echo "✓✓✓✓✓ -- Bigmath built, and tested - continuing on to run..."
@@ -94,7 +94,7 @@ test:	## Run unit tests for all packages under pkg
 
 .PHONY: test-performance
 test-performance:	## run unit tests and extract duration / avg perforamcnce stats
-	go test -v -timeout=10m -bench=. -count=1 ./pkg/bigarith/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
+	go test -v -timeout=10m -bench=. -count=1 ./pkg/ellipticcurve/... | go run ignorescripts/parse_test_stats/parse_test_stats.go 
 
 .PHONY: clean
 clean:	## Remove binaries and any temporary files
