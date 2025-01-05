@@ -456,11 +456,11 @@ func approximateRat(input *big.Rat) *big.Rat {
 	}
 
 	// If not near an integer, find the best rational approximation
-	return bestRationalApproximation(input, toleranceFractionRat)
+	return bestRationalApproximation(input)
 }
 
 // bestRationalApproximation finds the best rational approximation of input within the given tolerance.
-func bestRationalApproximation(input *big.Rat, tolerance *big.Rat) *big.Rat {
+func bestRationalApproximation(input *big.Rat) *big.Rat {
 	logger := utils.InitialiseLogger("[bestRationalApproximation]")
 	logger.Debug("starting function bestRationalApproximation")
 
