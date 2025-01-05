@@ -65,7 +65,8 @@ func Max(a, b int) int {
 	return b
 }
 
-// newFloat creates a new big.Float with the default precision.
+// newFloat creates a new big.Float with the default precision
+// ue this whenever creating new Float (except in very specific circumstances...)
 func NewFloat() *big.Float {
 	return new(big.Float).SetPrec(0)
 }

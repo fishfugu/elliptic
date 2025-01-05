@@ -9,10 +9,16 @@ import (
 
 var (
 	zeroInt, oneInt, twoInt, fourInt *big.Int
-	// piRat, twoPiRat, fourPiRat, halfPiRat      *big.Rat
-	zeroRat, twoRat, threeRat *big.Rat
-	precision, tolerance      uint
-	toleranceFractionRat      *big.Rat
+	zeroRat, twoRat, threeRat        *big.Rat
+	toleranceFractionRat             *big.Rat
+	halfFloat                        *big.Float
+
+	// name these after their values - to avoid needing to go check values while reading
+	// update name of variable if changing value
+	// NB: on one hand, want same value used all the time (not set separately)
+	// on the other - want readability
+	tolerance_1024 uint64
+	precision_2048 uint
 )
 
 func init() {
@@ -30,16 +36,18 @@ func init() {
 	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
 	// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
 	// the highest security assurances."
-	precision = 2048
-	tolerance = 1024
+	precision_2048 = 2048
+	tolerance_1024 = 1024
 
 	// set approximation preciion to 1024 - half of calc precision, still almost double the usual max
 	// precision used for. keys in EC Cryptography in the highest security situations:
 	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
-	tolleranceInt := new(big.Int).SetUint64(uint64(tolerance))
+	tolleranceInt := new(big.Int).SetUint64(tolerance_1024)
 	// Check if input is within tolerance of a whole number
 	twoToThePowerOfTollerance := new(big.Int).Exp(twoInt, tolleranceInt, nil)
 	toleranceFractionRat = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTollerance)
+
+	halfFloat = utils.NewFloat().SetFloat64(0.5)
 }
 
 // NOTE: these are private / immutable on purpose
@@ -241,8 +249,8 @@ func sqrtRat(input *big.Rat) (*big.Rat, error) {
 
 	// Use Newton's method for. arbitrary precision square root
 	// see init for ideas behind precision level
-	floatInput := new(big.Float).SetPrec(precision).SetRat(input)
-	floatSqrt := sqrtFloat(floatInput, precision)
+	floatInput := new(big.Float).SetPrec(precision_2048).SetRat(input)
+	floatSqrt := sqrtFloat(floatInput, precision_2048)
 
 	// Convert the result back to big.Rat
 	result := new(big.Rat)
@@ -259,10 +267,10 @@ func sqrtFloat(a *big.Float, prec uint) *big.Float {
 	guess := utils.NewFloat().Quo(a, big.NewFloat(2))
 
 	// Iteratively refine the guess
-	half := utils.NewFloat().SetFloat64(0.5)
 	for i := uint(0); i < prec; i++ {
-		temp := utils.NewFloat().Quo(a, guess)  // a / guess
-		guess.Add(guess, temp).Mul(guess, half) // (guess + a/guess) / 2
+		temp := utils.NewFloat().Quo(a, guess)     // temp = a / guess
+		temp2 := utils.NewFloat().Add(guess, temp) // temp2 = (guess + a/guess)
+		guess = utils.NewFloat().Mul(temp2, halfFloat)
 	}
 
 	return guess
@@ -479,7 +487,7 @@ func bestRationalApproximation(input *big.Rat, tolerance *big.Rat) *big.Rat {
 
 		// Check if the approximation is within the tolerance
 		diff := new(big.Rat).Sub(input, approx)
-		if diff.Abs(diff).Cmp(tolerance) <= 0 {
+		if diff.Abs(diff).Cmp(toleranceFractionRat) <= 0 {
 			return approx
 		}
 

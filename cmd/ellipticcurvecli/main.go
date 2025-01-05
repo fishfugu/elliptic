@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logger := utils.InitialiseLogger("[ECCLI]")
+	logger := utils.InitialiseLogger("[ECCLI/MAIN]")
 
 	err := run()
 	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"math/big"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -17,18 +18,25 @@ import (
 )
 
 func main() {
-	logger := utils.InitialiseLogger("[ECVIS]")
+	logger := utils.InitialiseLogger("[ECVIS/MAIN]")
+	logger.Debug("starting function main")
 
 	err := run()
-	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
+		panic(fmt.Sprintf("panic, error: %v\n", err))
+	}
 }
 
 func run() error {
+	logger := utils.InitialiseLogger("[ECVIS/RUN]")
+	logger.Debug("starting function run")
+
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Elliptic Curve Visualisation in Finite Field")
 
-	// Initialise curve parameters and create curve
-	a, b, p := new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(13)
+	// Initialise curve parameters and create the curve
+	a, b, p := big.NewInt(1), big.NewInt(1), big.NewInt(13)
 	curve := ellipticcurve.NewFiniteFieldEC(a, b, p)
 
 	// Calculate points on the curve
@@ -39,53 +47,58 @@ func run() error {
 		return nil
 	}
 
-	// Set up the canvas
-	w, h := float32(600), float32(600)
-	fynePoints := make([]fyne.CanvasObject, 0)
+	// Constants for canvas dimensions
+	const canvasSize = 600.0 // Assuming a square canvas (600x600)
+	pFloat, _ := p.Float64() // TODO: Deal with "accuracy" details
+	scale := canvasSize / pFloat
+
+	// Create points and display details
+	fynePoints := make([]fyne.CanvasObject, len(points))
 	pointDetails := ""
 
-	// Plot the points and collect point details
-	for _, point := range points { // could be arbitrarily large number of points
-		// do I need to work out a way to store more than MAXINT number of points?
+	for i, point := range points {
+		x, _ := point[0].Float64()
+		y, _ := point[1].Float64()
 
-		// point[0] is x, point[1] is y
-		x := new(big.Int).Set(point[0]) // dupe point[0] into x
-		y := new(big.Int).Set(point[1]) // dupe point[1] into y
-		// Convert p to int64
-		// TODO: does p need to arbitrarily large too?
-		// TODO: deal with "accuracy" details - i.e. the "_" return value
-		pFloat, _ := new(big.Int).Set(p).Float64()
-		xCanvas := float32(x.Int64()) * (float32(w) / float32(pFloat))
-		yCanvas := float32(h) - (float32(y.Int64()) * (float32(h) / float32(pFloat))) // Flipping y to have the origin at the bottom left
+		// Convert x, y to canvas coordinates
+		xCanvas := x * scale
+		yCanvas := canvasSize - (y * scale) // Flip y-axis to origin at the bottom-left
+
+		// Create a visual representation for the point
 		fynePoint := canvas.NewCircle(color.NRGBA{R: 255, G: 0, B: 0, A: 255})
 		fynePoint.Resize(fyne.NewSize(5, 5))
-		fynePoint.Move(fyne.NewPos(xCanvas, yCanvas))
-		fynePoints = append(fynePoints, fynePoint)
+		fynePoint.Move(fyne.NewPos(float32(xCanvas), float32(yCanvas)))
+
+		// Store the point's visual and details
+		fynePoints[i] = fynePoint
 		pointDetails += fmt.Sprintf("(%v, %v), ", x, y)
 	}
 
-	// Create a text label for. displaying the point details
+	// Create a label for displaying point details
 	pointLabel := widget.NewLabel(pointDetails)
 	pointLabel.Wrapping = fyne.TextWrapWord
 
-	// Create canvas for. x-y axes
-	axes := canvas.NewLine(color.Gray{Y: 123})
-	axes.StrokeWidth = 1
-	axes.Position1 = fyne.NewPos(0, h/2) // horizontal line
-	axes.Position2 = fyne.NewPos(w, h/2)
-	axes2 := canvas.NewLine(color.Gray{Y: 123})
-	axes2.StrokeWidth = 1
-	axes2.Position1 = fyne.NewPos(w/2, 0) // vertical line
-	axes2.Position2 = fyne.NewPos(w/2, h)
+	// Create axes for the canvas
+	xAxis := canvas.NewLine(color.Gray{Y: 123})
+	xAxis.StrokeWidth = 1
+	xAxis.Position1 = fyne.NewPos(0, canvasSize/2) // Horizontal line
+	xAxis.Position2 = fyne.NewPos(canvasSize, canvasSize/2)
+
+	yAxis := canvas.NewLine(color.Gray{Y: 123})
+	yAxis.StrokeWidth = 1
+	yAxis.Position1 = fyne.NewPos(canvasSize/2, 0) // Vertical line
+	yAxis.Position2 = fyne.NewPos(canvasSize/2, canvasSize)
 
 	// Assemble content with layout
-	split := container.NewHSplit(
-		container.NewVScroll(pointLabel),
-		container.NewWithoutLayout(append(fynePoints, axes, axes2)...),
+	content := container.NewHSplit(
+		container.NewVScroll(pointLabel),                                // Left: Point details
+		container.NewWithoutLayout(append(fynePoints, xAxis, yAxis)...), // Right: Visualisation
 	)
-	split.Offset = 0.3
-	myWindow.SetContent(split)
-	myWindow.Resize(fyne.NewSize(w, h))
+	content.Offset = 0.3 // Set split proportion
+	myWindow.SetContent(content)
+
+	// Set window size and display
+	myWindow.Resize(fyne.NewSize(canvasSize, canvasSize))
 	myWindow.ShowAndRun()
 
 	return nil
