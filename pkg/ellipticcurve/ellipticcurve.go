@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	zeroInt, oneInt, twoInt *big.Int
+	zeroInt, oneInt, twoInt, fourInt *big.Int
 	// piRat, twoPiRat, fourPiRat, halfPiRat      *big.Rat
 	zeroRat, twoRat, threeRat *big.Rat
 	precision, tolerance      uint
@@ -16,24 +16,14 @@ var (
 )
 
 func init() {
-	// Approximation - 2π as a big.Rat
-	// piNumer, _ := new(big.Int).SetString("3141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273724587006606315588174881520920962829254091715364367892590360011330530548820466521384146951941511609433057270365759591953092186117381932611793105118548074462379962749567351885752724891227938183011949129833673362", 10)
-	// piDenom, _ := new(big.Int).SetString("1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", 10)
-
 	zeroInt = new(big.Int).SetInt64(0)
 	oneInt = new(big.Int).SetInt64(1)
 	twoInt = new(big.Int).SetInt64(2)
+	fourInt = new(big.Int).SetInt64(4)
 
 	zeroRat = big.NewRat(0, 1)
-	// oneRat = big.NewRat(1, 1)
 	twoRat = big.NewRat(2, 1)
 	threeRat = big.NewRat(3, 1)
-	// fourRat = big.NewRat(4, 1)
-
-	// piRat = new(big.Rat).SetFrac(piNumer, piDenom)
-	// halfPiRat = new(big.Rat).Quo(piRat, big.NewRat(2, 1))
-	// twoPiRat = new(big.Rat).Mul(piRat, big.NewRat(2, 1))
-	// fourPiRat = new(big.Rat).Mul(piRat, big.NewRat(2, 1))
 
 	// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
 	// used for. keys in EC Cryptography in the highest security situations:
@@ -63,10 +53,8 @@ type EllipticCurve struct {
 
 // FiniteFieldEC represents an elliptic curve over a finite field defined by the equation y^2 = x^3 + Ax + B.
 type FiniteFieldEC struct {
-	ec EllipticCurve
-	// TODO: should this be definable by "strings" rather than *big.Int?
-	// Woould that make it easier to interface with bigarith functions?
-	p *big.Int // Coefficients of the curve equation and prime modulus of the field.
+	ec EllipticCurve // Coefficients of the curve equation.
+	p  *big.Int      // Prime modulus of the field.
 }
 
 // NewEllipticCurve creates a new EllipticCurve with given coefficients.
@@ -113,19 +101,17 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 	logger := utils.InitialiseLogger("[SolveCubic]")
 	var roots []*big.Rat
 
-	A, B := ec.GetDetailsAsRats()
-
-	// convert A and B to big.Rat
+	A, B := ec.GetDetails()
 
 	// Discriminant
 	// 4a^3 + 27b^2
-	aCubed := new(big.Rat).Mul(A, new(big.Rat).Mul(A, A))
-	bSquared := new(big.Rat).Mul(B, B)
-	fourACubed := new(big.Rat).Mul(new(big.Rat).SetInt64(4), aCubed)
-	twentySevenBCubed := new(big.Rat).Mul(new(big.Rat).SetInt64(27), bSquared)
-	discriminant := new(big.Rat).Add(fourACubed, twentySevenBCubed)
+	aCubed := new(big.Int).Mul(A, new(big.Int).Mul(A, A))
+	bSquared := new(big.Int).Mul(B, B)
+	fourACubed := new(big.Int).Mul(new(big.Int).SetInt64(4), aCubed)
+	twentySevenBCubed := new(big.Int).Mul(new(big.Int).SetInt64(27), bSquared)
+	discriminant := new(big.Int).Add(fourACubed, twentySevenBCubed)
 
-	logger.Debugf("Discriminant: %s", discriminant.FloatString(10))
+	logger.Debugf("Discriminant: %s", discriminant.String())
 
 	// Find one root using newtonCubic
 	root1, err := newtonCubic(A, B)
@@ -137,17 +123,17 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 
 	logger.Debugf("First root: %s", approximateRat(root1).FloatString(400))
 
-	if discriminant.Cmp(zeroRat) == 0 {
+	if discriminant.Cmp(zeroInt) == 0 {
 		// must have a double root
 		// see if root1 is double
 		xSquared := new(big.Rat).Mul(root1, root1)
 		threeXSquared := new(big.Rat).Mul(threeRat, xSquared)
-		gradient := approximateRat(new(big.Rat).Add(threeXSquared, A))
+		gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(A))
 
 		logger.Debugf("Gradient: %s", gradient.FloatString(400))
 		logger.Debugf("Cmp: %d", gradient.Cmp(zeroRat))
 
-		if gradient.Cmp(zeroRat) == 0 {
+		if approximateRat(gradient).Cmp(zeroRat) == 0 {
 			// root2 == root1 - AND root3 == - 2 * root1
 			roots = append(roots, approximateRat(root1))
 			root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
@@ -160,10 +146,10 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		}
 	}
 
-	if discriminant.Cmp(zeroRat) < 0 {
+	if discriminant.Cmp(zeroInt) < 0 {
 		// must have 3 distinct roots
 		// Find the remaining two roots
-		remainingRoots, err := findRemainingRoots(A, root1)
+		remainingRoots, err := findRemainingRoots(new(big.Rat).SetInt(A), root1)
 		if err != nil {
 			utils.LogOnError(logger, err, "SolveCubic/findRemainingRoots", false)
 			return nil, err
@@ -316,72 +302,69 @@ func intSqrt(x *big.Int) *big.Int {
 }
 
 // QuickEstimateRoot estimates a root of the cubic equation x^3 + Ax + B = 0
-// by solving the linear approximation Ax + B = 0
+// by solving the linear approximation Ax + B = 0 -> x = -B/A
 // Using the linear approximation y = Ax + B
-// to estimate the root is a quick and efficient heuristic. By finding where
-// Ax+B=0, the x-intercept of this linear equation provides a very reasonable
-// starting point for one of the roots of the cubic.
-func quickEstimateRoot(A, B *big.Rat) *big.Rat {
+// becuase this line intersects curve at x=0 -> (0, B)
+// and has the same gradient = A at that point: y' = 3x^2 + B
+// except where B=0, when 0 is def a root - so return 0
+// and except where A=0 so y=B never crosses y-axis
+// so just guess x = -B
+func quickEstimateRoot(A, B *big.Int) *big.Int {
 	// Check for B == 0 which means f(x) = x^3 + Ax and so x == 0 is a root
 	if B.Sign() == 0 {
-		return new(big.Rat).SetInt64(0)
+		return new(big.Int).SetInt64(0)
 	}
-	negB := new(big.Rat).Neg(B)
+	negB := new(big.Int).Neg(B)
+
 	// Check for division by zero (A = 0)
 	// Reutrn -B as estimate
 	if A.Sign() == 0 {
 		return negB
 	}
 	// Compute -B / A
-	return new(big.Rat).Quo(negB, A)
+	return new(big.Int).Quo(negB, fourInt)
 }
 
 // newtonCubic finds one root for the cubic in the form x^3 + Ax + B
-func newtonCubic(A, B *big.Rat) (*big.Rat, error) {
+func newtonCubic(A, B *big.Int) (*big.Rat, error) {
 	logger := utils.InitialiseLogger("[newtonCubic]")
 	logger.Info("starting function newtonCubic")
 
-	// for x^3 + Ax + B we have r_1 + r_2 + r_3 = 0
-	// so in some sense one root must be >= 0 and another must be <= 0
-	// so 0 may not be a bad initial guess
-	// let's try this instead:
-	initialGuess := new(big.Rat).SetInt64(0)
-	var err error
-	if A.Sign() != 0 {
-		initialGuess = quickEstimateRoot(A, B)
-		if err != nil {
-			utils.LogOnError(logger, err, "newtonCubic", true)
-		}
+	// Check for B == 0 which means f(x) = x^3 + Ax and so x == 0 is a root
+	if B.Sign() == 0 {
+		return new(big.Rat).SetInt64(0), nil
 	}
-	x := new(big.Rat).Set(initialGuess)
-	delta := new(big.Rat).SetInt64(1)
+
+	initialGuess := quickEstimateRoot(A, B)
+	x := new(big.Rat).SetInt(initialGuess)
+	delta := new(big.Rat).SetInt64(1) // just assume not 0 for now
 	for {
-		logger.Debugf("Starting Loop for x: %s", x.FloatString(1000))
+		logger.Debugf("Starting Loop for x: %s", x.String())
 
 		// f(x) = x^3 + Ax + B
 		fx := new(big.Rat).Add(
 			new(big.Rat).Add(
 				new(big.Rat).Mul(x, new(big.Rat).Mul(x, x)), // x^3
-				new(big.Rat).Mul(A, x),                      // Ax
+				new(big.Rat).Mul(new(big.Rat).SetInt(A), x), // Ax
 			),
-			B,
+			new(big.Rat).SetInt(B),
 		) // x^3 + Ax + B
-		logger.Debugf("FX: %s", fx.FloatString(1000))
+		logger.Debugf("FX: %s", fx.String())
 
 		// f'(x) = 3x^2 + A
 		fpx := new(big.Rat).Add(
 			new(big.Rat).Mul(threeRat, new(big.Rat).Mul(x, x)), // 3x^2
-			A,
+			new(big.Rat).SetInt(A),
 		) // 3x^2 + A
-		logger.Debugf("FPX: %s", fpx.FloatString(1000))
+		logger.Debugf("FPX: %s", fpx.String())
 
 		if fpx.Cmp(zeroRat) != 0 {
 			delta = new(big.Rat).Quo(fx, fpx) // f(x) / f'(x)
-			logger.Debugf("Delta: %s", delta.FloatString(1000))
+			logger.Debugf("Delta: %s", delta.FloatString(400))
 		}
 
 		x.Sub(x, delta) // x = x - (f(x) / f'(x))
-		logger.Debugf("X: %s", x.FloatString(1000))
+		logger.Debugf("X: %s", x.FloatString(400))
 
 		// now check for Rat simplification
 		x = approximateRat(x)
@@ -389,7 +372,7 @@ func newtonCubic(A, B *big.Rat) (*big.Rat, error) {
 		deltaAbs := new(big.Rat).Abs(delta)
 		logger.Debugf("1 DeltaAbs: %s, toleranceFractionRat: %s", deltaAbs.FloatString(1000), toleranceFractionRat.FloatString(1000))
 
-		if deltaAbs.Cmp(toleranceFractionRat) == -1 { // Convergence tolerance
+		if deltaAbs.Cmp(toleranceFractionRat) == -1 { // Convergence tolerance - close enough?
 			break
 		}
 		logger.Debugf("2 DeltaAbs: %s, toleranceFractionRat: %s", deltaAbs.FloatString(1000), toleranceFractionRat.FloatString(1000))
@@ -412,7 +395,7 @@ func solveQuadratic(p, q *big.Rat) ([]*big.Rat, error) {
 
 	// Check if discriminant is negative (no real roots)
 	if discriminant.Sign() < 0 {
-		return nil, fmt.Errorf("no real roots; discriminant is negative - p: %s, q: %s", p.FloatString(10), q.FloatString(10))
+		return nil, fmt.Errorf("no real roots; discriminant is negative - p: %s, q: %s", p.FloatString(400), q.FloatString(400))
 	}
 
 	// Square root of the discriminant
