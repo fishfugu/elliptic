@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -21,15 +23,14 @@ func main() {
 	logger := utils.InitialiseLogger("[ECVIS/MAIN]")
 	logger.Debug("starting function main")
 
-	err := run()
+	err := run(logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
 		panic(fmt.Sprintf("panic, error: %v\n", err))
 	}
 }
 
-func run() error {
-	logger := utils.InitialiseLogger("[ECVIS/RUN]")
+func run(logger *logrus.Logger) error {
 	logger.Debug("starting function run")
 
 	myApp := app.New()

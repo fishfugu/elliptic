@@ -6,18 +6,26 @@ import (
 	"math/big"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"elliptic/pkg/ellipticcurve"
+	"elliptic/pkg/finiteintfield"
 	"elliptic/pkg/utils"
 )
 
 func main() {
 	logger := utils.InitialiseLogger("[ECCLI/MAIN]")
 
-	err := run()
-	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
+	err := run(logger)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
+		panic(fmt.Sprintf("panic, error: %v\n", err))
+	}
 }
 
-func run() error {
+func run(logger *logrus.Logger) error {
+	logger.Info("starting function run")
+
 	// Define command-line flags for. A, B, and P
 	aFlag := flag.String("A", "", "Coefficient A of the elliptic curve")
 	bFlag := flag.String("B", "", "Coefficient B of the elliptic curve")
@@ -47,25 +55,27 @@ func run() error {
 		// Calc / display "lowest x value where y = 0" value
 		roots, err = curve.SolveCubic()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
-			os.Exit(1)
+			return err
 		}
 	default:
 		// TODO: deal with error here
-		pBigInt, _ := new(big.Int).SetString(p, 10)
+		pBigInt, ok := new(big.Int).SetString(p, 10)
+		if !ok {
+			return fmt.Errorf("error creating big.Int out of prime modulus value")
+		}
 
 		// Create the elliptic curve over the finite field
 		curve := ellipticcurve.NewFiniteFieldEC(aBigInt, bBigInt, pBigInt)
 
 		// Calculate points on the curve
-		// points, err := finiteintfield.CalculatePoints(*curve)
-		// if err != nil {
-		// 	fmt.Fprintf(os.Stderr, "Error calculating points: %v\n", err)
-		// 	os.Exit(1)
-		// }
+		points, err := finiteintfield.CalculatePoints(*curve)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error calculating points: %v\n", err)
+			os.Exit(1)
+		}
 
 		// Output points
-		// fmt.Println(finiteintfield.FormatPoints(points))
+		finiteintfield.LogPoints(points)
 
 		// Visualise points if the flag is set
 		// if *visualiseFlag {

@@ -5,15 +5,17 @@ import (
 	"math/big"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"elliptic/pkg/finiteintfield"
 	"elliptic/pkg/utils"
 )
 
 func main() {
-	logger := utils.InitialiseLogger("[ECVIS/MAIN]")
+	logger := utils.InitialiseLogger("[BIGMATH/MAIN]")
 	logger.Debug("starting function main")
 
-	err := run()
+	err := run(logger)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
 		panic(fmt.Sprintf("panic, error: %v\n", err))
@@ -21,8 +23,8 @@ func main() {
 }
 
 // Smoke test for basic math operations with big.Int
-func run() error {
-	logger := utils.InitialiseLogger("[BIGMATH]")
+func run(logger *logrus.Logger) error {
+	logger.Debug("starting function run")
 
 	// Setup bigNums to do calculations with
 	bigNum1, ok := new(big.Int).SetString("12345678901234567890", 10)

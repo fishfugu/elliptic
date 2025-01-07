@@ -8,32 +8,50 @@ import (
 	"elliptic/pkg/utils"
 )
 
+var (
+	zeroInt, oneInt, twoInt, threeInt *big.Int
+)
+
+func init() {
+	zeroInt, oneInt, twoInt, threeInt = big.NewInt(0), big.NewInt(1), big.NewInt(2), big.NewInt(3)
+}
+
 // CalculatePoints calculates all points on an elliptic curve y^2 = x^3 + Ax + B over a finite field defined by prime p
 func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]*big.Int, error) {
+	logger := utils.InitialiseLogger("[CalculatePoints]")
+	logger.Debug("starting function CalculatePoints")
+
 	var points [][2]*big.Int
 
 	A, B, p := FFEC.GetDetails()
 
 	// set up y^2 lookup
-	ySquaredLookup := make(map[*big.Int][]*big.Int)
-	for y := new(big.Int).SetInt64(0); y.Cmp(p) < 0; y = new(big.Int).Add(y, new(big.Int).SetInt64(1)) {
-		ySquared := new(big.Int).Exp(y, new(big.Int).SetInt64(2), p) // y squared mod p
-		ySquaredLookup[ySquared] = append(ySquaredLookup[ySquared], y)
+	ySquaredLookup := make(map[string][]*big.Int)
+	ySquaredModP := big.NewInt(1)
+	for y := big.NewInt(0); y.Cmp(p) < 0; y.Add(y, oneInt) {
+		ySquaredModP.Exp(y, twoInt, p) // y squared mod p
+		ySquaredLookup[ySquaredModP.String()] = append(ySquaredLookup[ySquaredModP.String()], new(big.Int).Set(y))
+		logger.Debugf("XXX -- ySquaredLookup: %v, ySquaredModP: %s, y: %v", ySquaredLookup, ySquaredModP.String(), y)
 	}
 
-	for x := new(big.Int).SetInt64(0); x.Cmp(p) < 0; x = new(big.Int).Add(x, new(big.Int).SetInt64(1)) {
+	xCubed, Ax, xCubedPlusAx, xCubedPlusAxPlusB, rhs := new(big.Int), new(big.Int), new(big.Int), new(big.Int), new(big.Int)
+	logger.Debugf("p: %v, zeroInt.Cmp(p): %v, zeroInt: %v", p, zeroInt.Cmp(p), zeroInt)
+
+	for x := big.NewInt(0); x.Cmp(p) < 0; x.Add(x, oneInt) {
 		// Calculate rhs: x^3 + Ax + B
-		xCubed := new(big.Int).Exp(x, new(big.Int).SetInt64(3), p) // x^3 mod p
-		Ax := new(big.Int).Mul(A, x)                               // A times x
-		xCubedPlusAx := new(big.Int).Add(xCubed, Ax)               // x^3 + Ax
-		xCubedPlusAxPlusB := new(big.Int).Add(xCubedPlusAx, B)     // x^3 + Ax + B
-		rhs := new(big.Int).Mod(xCubedPlusAxPlusB, p)              // (x^3 + Ax + B) mod p
+		xCubed.Exp(x, threeInt, p)             // x^3 mod p
+		Ax.Mul(A, x)                           // A times x
+		xCubedPlusAx.Add(xCubed, Ax)           // x^3 + Ax
+		xCubedPlusAxPlusB.Add(xCubedPlusAx, B) // x^3 + Ax + B
+		rhs.Mod(xCubedPlusAxPlusB, p)          // (x^3 + Ax + B) mod p
+
+		logger.Debugf("ySquaredLookup: %v, rhs: %v, ySquaredLookup[new(big.Int).Set(rhs)]: %v", ySquaredLookup, rhs, ySquaredLookup[rhs.String()])
 
 		// Check for y^2 = rhs
-		if yList, ok := ySquaredLookup[rhs]; ok {
+		if yList, ok := ySquaredLookup[rhs.String()]; ok {
 			// yList contains list of y values for which y^2 = rhs exists
 			for _, y := range yList {
-				points = append(points, [2]*big.Int{x, y})
+				points = append(points, [2]*big.Int{new(big.Int).Set(x), new(big.Int).Set(y)})
 			}
 		}
 	}
@@ -60,6 +78,9 @@ func DivideInField(a, b, p *big.Int) (*big.Int, error) {
 // ModularInverse calculates the multiplicative inverse of a modulo p using Fermat's Little Theorem
 // and returns it as a string. Returns an error if p is not prime or a and p are not coprime.
 func ModularInverse(a, p *big.Int) (*big.Int, error) {
+	logger := utils.InitialiseLogger("[ModularInverse]")
+	logger.Debug("starting function ModularInverse")
+
 	// Check if p is prime; if not, the multiplicative inverse might not exist
 	// https://pkg.go.dev/math/big#Int.ProbablyPrime
 	// From ---^ that site: "The probability of returning true for a randomly chosen non-prime is at most ¼ⁿ"
@@ -141,13 +162,16 @@ func ModularInverse(a, p *big.Int) (*big.Int, error) {
 // 	return firstPositionPoints, nil
 // }
 
-// FormatPoints formats a list of points for easy command line reading
-func FormatPoints(points [][2]*big.Int) string {
-	result := "List of Points on the Curve:\n"
+// FormatPoints prints out in the log, a list of points for easy reading
+func LogPoints(points [][2]*big.Int) {
+	logger := utils.InitialiseLogger("[ModularInverse]")
+	logger.Debug("starting function ModularInverse")
+
+	logger.Debug("list of points on the curve:")
 	for _, point := range points {
-		result += fmt.Sprintf("Point (x, y): (%s, %s)\n", point[0].String(), point[1].String())
+		logger.Warnf("Point (x, y): (%s, %s)\n", point[0].String(), point[1].String())
 	}
-	return result
+	logger.Debug("END OF list of points on the curve ===============")
 }
 
 // VisualisePoints displays the points on a 2D text-based plane, including axes, reflection line, and scale indicators.

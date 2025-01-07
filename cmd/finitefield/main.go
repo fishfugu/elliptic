@@ -3,24 +3,30 @@ package main
 import (
 	"fmt"
 	"math/big"
+	"os"
+
+	"github.com/sirupsen/logrus"
 
 	"elliptic/pkg/ellipticcurve"
 	"elliptic/pkg/finiteintfield"
 	"elliptic/pkg/utils"
-
-	"github.com/sirupsen/logrus"
 )
 
 const divider = "==========================="
 
 func main() {
-	logger := utils.InitialiseLogger("[FINFIELD]")
+	logger := utils.InitialiseLogger("[FINFIELD/MAIN]")
 
 	err := run(logger)
-	utils.LogOnError(logger, err, fmt.Sprintf("error percolated to main, error: %v\n", err), false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "panic, error: %v\n", err)
+		panic(fmt.Sprintf("panic, error: %v\n", err))
+	}
 }
 
 func run(logger *logrus.Logger) error {
+	logger.Info("starting function run")
+
 	// Define elliptic curves with parameters (a, b, p)
 	curves := []struct {
 		a, b, p *big.Int
@@ -51,7 +57,7 @@ func run(logger *logrus.Logger) error {
 
 		// Format and display points
 		fmt.Println("Points on the Elliptic Curve:")
-		fmt.Println(finiteintfield.FormatPoints(points))
+		finiteintfield.LogPoints(points)
 
 		// Convert p to int for visualisation
 		pInt64 := curve.p.Int64()
