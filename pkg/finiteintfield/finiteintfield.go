@@ -17,7 +17,7 @@ func init() {
 }
 
 // CalculatePoints calculates all points on an elliptic curve y^2 = x^3 + Ax + B over a finite field defined by prime p
-func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]*big.Int, error) {
+func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC, xWindowShift, yWindowShift *big.Int) ([][2]*big.Int, error) {
 	logger := utils.InitialiseLogger("[CalculatePoints]")
 	logger.Debug("starting function CalculatePoints")
 
@@ -52,6 +52,38 @@ func CalculatePoints(FFEC ellipticcurve.FiniteFieldEC) ([][2]*big.Int, error) {
 			// yList contains list of y values for which y^2 = rhs exists
 			for _, y := range yList {
 				points = append(points, [2]*big.Int{new(big.Int).Set(x), new(big.Int).Set(y)})
+			}
+		}
+	}
+
+	// if xWindowShift exists and is not 0
+	// shift all the x-values for the points
+	// by enough to put thwm in the right window
+	if (xWindowShift != nil) && (xWindowShift.Sign() != 0) {
+		minXWindow := new(big.Int).Add(zeroInt, xWindowShift)
+		maxXWindow := new(big.Int).Add(p, xWindowShift)
+		for _, point := range points {
+			for point[0].Cmp(minXWindow) < 0 {
+				point[0].Add(point[0], p)
+			}
+			for point[0].Cmp(maxXWindow) >= 0 {
+				point[0].Sub(point[0], p)
+			}
+		}
+	}
+
+	// if xWindowShift exists and is not 0
+	// shift all the x-values for the points
+	// by enough to put thwm in the right window
+	if (yWindowShift != nil) && (yWindowShift.Sign() != 0) {
+		minYWindow := new(big.Int).Add(zeroInt, yWindowShift)
+		maxYWindow := new(big.Int).Add(p, yWindowShift)
+		for _, point := range points {
+			for point[1].Cmp(minYWindow) < 0 {
+				point[1].Add(point[1], p)
+			}
+			for point[1].Cmp(maxYWindow) >= 0 {
+				point[1].Sub(point[1], p)
 			}
 		}
 	}

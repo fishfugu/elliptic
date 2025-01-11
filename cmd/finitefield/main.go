@@ -49,7 +49,7 @@ func run(logger *logrus.Logger) error {
 		eCurve := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
 
 		// Calculate points on the curve
-		points, err := finiteintfield.CalculatePoints(*eCurve)
+		points, err := finiteintfield.CalculatePoints(*eCurve, nil, nil)
 		if err != nil {
 			utils.LogOnError(logger, err, fmt.Sprintf("error from CalculatePoints: %v\n", err), true)
 			continue // Skip to the next curve on error

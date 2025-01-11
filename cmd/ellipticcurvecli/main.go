@@ -68,7 +68,7 @@ func run(logger *logrus.Logger) error {
 		curve := ellipticcurve.NewFiniteFieldEC(aBigInt, bBigInt, pBigInt)
 
 		// Calculate points on the curve
-		points, err := finiteintfield.CalculatePoints(*curve)
+		points, err := finiteintfield.CalculatePoints(*curve, nil, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error calculating points: %v\n", err)
 			os.Exit(1)
@@ -88,7 +88,7 @@ func run(logger *logrus.Logger) error {
 		// }
 
 		// Calc / display "lowest x value where y = 0" value
-		roots, err = curve.SolveCubic()
+		roots, err = curve.SolveCubic(nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error solving cubic: %s\nCurve: %v", err, *curve)
 			os.Exit(1)

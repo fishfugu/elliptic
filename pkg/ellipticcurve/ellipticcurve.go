@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	oneInt, twoInt, fourInt   *big.Int
-	twoRat, threeRat, fourRat *big.Rat
-	toleranceFractionRat      *big.Rat
-	halfFloat                 *big.Float
+	oneInt, twoInt, fourInt            *big.Int
+	zeroRat, twoRat, threeRat, fourRat *big.Rat
+	toleranceFractionRat               *big.Rat
+	halfFloat                          *big.Float
 
 	// name these after their values - to avoid needing to go check values while reading
 	// update name of variable if changing value
@@ -23,7 +23,7 @@ var (
 
 func init() {
 	oneInt, twoInt, fourInt = big.NewInt(1), big.NewInt(2), big.NewInt(4)
-	twoRat, threeRat, fourRat = big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
+	zeroRat, twoRat, threeRat, fourRat = big.NewRat(0, 1), big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
 
 	// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
 	// used for. keys in EC Cryptography in the highest security situations:
@@ -96,6 +96,8 @@ func (ffec *FiniteFieldEC) GetDetailsAsRats() (*big.Rat, *big.Rat, *big.Rat) {
 }
 
 // solveCubic - form x^3 + Ax + B
+// Lists x value of the roots of the cubic equation
+// Returned roots are in order from min x to max x
 func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 	logger := utils.InitialiseLogger("[SolveCubic]")
 	var roots []*big.Rat
@@ -118,7 +120,9 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		utils.LogOnError(logger, err, "SolveCubic/newtonCubic", false)
 		return nil, err
 	}
-	roots = append(roots, approximateRat(root1))
+	roots = []*big.Rat{
+		root1,
+	}
 
 	logger.Debugf("First root: %s", approximateRat(root1).FloatString(400))
 
@@ -133,15 +137,42 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		logger.Debugf("Sign: %d", gradient.Sign())
 
 		if approximateRat(gradient).Sign() == 0 {
-			// root2 == root1 - AND root3 == - 2 * root1
-			roots = append(roots, approximateRat(root1))
+			// root1 IS a double
+			// root2 == root1, AND root3 == - 2 * root1
 			root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
-			roots = append(roots, approximateRat(root3))
+			if root1.Cmp(root3) < 1 {
+				// root1 < root3
+				roots = []*big.Rat{
+					root1,
+					root1,
+					root3,
+				}
+			} else {
+				// root1 >= root3 (NB: if root1 == root3 the order doesn't matter)
+				roots = []*big.Rat{
+					root3,
+					root1,
+					root1,
+				}
+			}
 		} else {
 			// root2 == root3 == - root1 / 2
 			root2 := new(big.Rat).Neg(new(big.Rat).Quo(root1, twoRat))
-			roots = append(roots, approximateRat(root2))
-			roots = append(roots, approximateRat(root2))
+			if root1.Cmp(root2) < 1 {
+				// root1 < root2
+				roots = []*big.Rat{
+					root1,
+					root2,
+					root2,
+				}
+			} else {
+				// root1 >= root2 (NB: if root1 == root2 the order doesn't matter)
+				roots = []*big.Rat{
+					root2,
+					root2,
+					root1,
+				}
+			}
 		}
 	}
 
@@ -158,19 +189,94 @@ func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
 		for i, root := range remainingRoots {
 			remainingRoots[i] = approximateRat(root)
 		}
-		roots = append(roots, remainingRoots...)
+
+		if remainingRoots[0].Cmp(root1) < 0 {
+			// remainingRoots[0] < root1
+			if remainingRoots[1].Cmp(remainingRoots[0]) < 0 {
+				// remainingRoots[1] < remainingRoots[0] (remainingRoots[0] < root1)
+				roots = []*big.Rat{
+					remainingRoots[1],
+					remainingRoots[0],
+					root1,
+				}
+			} else {
+				// remainingRoots[0] <= remainingRoots[1] (remainingRoots[0] < root1)
+				if remainingRoots[1].Cmp(root1) < 0 {
+					// remainingRoots[1] < root1 (remainingRoots[0] <= remainingRoots[1]) (remainingRoots[0] < root1)
+					roots = []*big.Rat{
+						remainingRoots[0],
+						remainingRoots[1],
+						root1,
+					}
+				} else {
+					// root1 <= remainingRoots[1] (remainingRoots[0] <= remainingRoots[1]) (remainingRoots[0] < root1)
+					roots = []*big.Rat{
+						remainingRoots[0],
+						root1,
+						remainingRoots[1],
+					}
+				}
+			}
+		} else {
+			// root1 <= remainingRoots[0]
+			if remainingRoots[1].Cmp(remainingRoots[0]) < 0 {
+				// remainingRoots[1] < remainingRoots[0] (root1 <= remainingRoots[0])
+				if remainingRoots[1].Cmp(root1) < 0 {
+					// remainingRoots[1] < root1 (root1 <= remainingRoots[0]) (remainingRoots[1] < remainingRoots[0])
+					roots = []*big.Rat{
+						remainingRoots[1],
+						root1,
+						remainingRoots[0],
+					}
+				} else {
+					// root1 <= remainingRoots[1] (root1 <= remainingRoots[0]) (remainingRoots[1] < remainingRoots[0])
+					roots = []*big.Rat{
+						remainingRoots[0],
+						root1,
+						remainingRoots[1],
+					}
+				}
+			} else {
+				// remainingRoots[0] <= remainingRoots[1] (root1 <= remainingRoots[0])
+				roots = []*big.Rat{
+					root1,
+					remainingRoots[0],
+					remainingRoots[1],
+				}
+			}
+		}
 	}
 
+	// returned roots are in order from min x to max x
 	return roots, nil
 }
 
-func (ffec FiniteFieldEC) SolveCubic() ([]*big.Rat, error) {
-	results, err := ffec.ec.SolveCubic()
+func (ffec FiniteFieldEC) SolveCubic(xWindowShift *big.Int) ([]*big.Rat, error) {
+	_, _, p := ffec.GetDetailsAsRats()
+
+	roots, err := ffec.ec.SolveCubic()
 	// convert each value into its mod p equivalent
-	for i, result := range results {
-		results[i] = modRatInt(result, ffec.p)
+	for i, result := range roots {
+		roots[i] = modRatInt(result, ffec.p)
 	}
-	return results, err
+
+	// if xWindowShift exists and is not 0
+	// shift all the x-values for the points
+	// by enough to put thwm in the right window
+	if (xWindowShift != nil) && (xWindowShift.Sign() != 0) {
+		minXWindow := new(big.Rat).Add(zeroRat, new(big.Rat).SetInt(xWindowShift))
+		maxXWindow := new(big.Rat).Add(p, new(big.Rat).SetInt(xWindowShift))
+		for _, root := range roots {
+			for root.Cmp(minXWindow) < 0 {
+				root.Add(root, p)
+			}
+			for root.Cmp(maxXWindow) >= 0 {
+				root.Sub(root, p)
+			}
+		}
+	}
+
+	return roots, err
 }
 
 // FindY finds the y value - an EllipticCurve - x^3 + Ax + B
