@@ -26,15 +26,15 @@ const (
 )
 
 var (
-	graphSizeInt                        *big.Int
-	graphSizeRat                        *big.Rat
-	halfRat, oneRat, fourRat, graphStep *big.Rat
+	graphSizeInt       *big.Int
+	graphSizeRat       *big.Rat
+	halfRat, graphStep *big.Rat
 )
 
 func init() {
 	graphSizeInt = big.NewInt(graphSize)
 	graphSizeRat = big.NewRat(graphSize, 1)
-	halfRat, oneRat, fourRat, graphStep = big.NewRat(1, 2), big.NewRat(1, 1), big.NewRat(4, 1), big.NewRat(1, graphSize)
+	halfRat, graphStep = big.NewRat(1, 2), big.NewRat(1, graphSize)
 }
 
 func main() {
