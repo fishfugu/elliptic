@@ -3,76 +3,54 @@ package ellipticcurve
 import (
 	"fmt"
 	"math/big"
+	"sync"
 
 	"elliptic/pkg/utils"
 )
 
-var (
-	oneInt, twoInt, fourInt            *big.Int
-	zeroRat, twoRat, threeRat, fourRat *big.Rat
-	toleranceFractionRat               *big.Rat
-	halfFloat                          *big.Float
+// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
+// used for. keys in EC Cryptography in the highest security situations:
+// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
+// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
+// the highest security assurances."
 
-	// name these after their values - to avoid needing to go check values while reading
-	// update name of variable if changing value
-	// NB: on one hand, want same value used all the time (not set separately)
-	// on the other - want readability
-	tolerance_1024 uint64
-	precision_2048 uint
+var (
+	oneInt, twoInt, fourInt                       = big.NewInt(1), big.NewInt(2), big.NewInt(4)
+	zeroRat, twoRat, threeRat, fourRat            = big.NewRat(0, 1), big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
+	precision_2048                     uint       = 2048
+	tolerance_1024                     uint64     = 1024
+	poolRat                                       = sync.Pool{New: func() interface{} { return new(big.Rat) }}
+	poolInt                                       = sync.Pool{New: func() interface{} { return new(big.Int) }}
+	toleranceInt                                  = big.NewInt(int64(tolerance_1024))
+	twoToThePowerOfTolerance                      = new(big.Int).Exp(twoInt, toleranceInt, nil)
+	toleranceFractionRat               *big.Rat   = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTolerance)
+	halfFloat                          *big.Float = utils.NewFloat().SetFloat64(0.5)
 )
 
-func init() {
-	oneInt, twoInt, fourInt = big.NewInt(1), big.NewInt(2), big.NewInt(4)
-	zeroRat, twoRat, threeRat, fourRat = big.NewRat(0, 1), big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
-
-	// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
-	// used for. keys in EC Cryptography in the highest security situations:
-	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
-	// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
-	// the highest security assurances."
-	precision_2048, tolerance_1024 = 2048, 1024
-
-	// Tolerance for approximation
-	tolleranceInt := big.NewInt(int64(tolerance_1024))
-	twoToThePowerOfTollerance := new(big.Int).Exp(twoInt, tolleranceInt, nil)
-	toleranceFractionRat = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTollerance)
-
-	// Commonly used float
-	halfFloat = utils.NewFloat().SetFloat64(0.5)
-}
-
-// NOTE: these are private / immutable on purpose
-// All ECs defined in the Weierstrass form
-
 // EllipticCurve represents an elliptic curve defined by the equation y^2 = x^3 + Ax + B
-// where A and B are both integers represented *big.Int objects
 type EllipticCurve struct {
-	a, b *big.Int // Coefficients of the curve equation.
+	a, b *big.Int
 }
 
-// FiniteFieldEC represents an elliptic curve over a finite field defined by the equation y^2 = x^3 + Ax + B.
+// FiniteFieldEC represents an elliptic curve over a finite field
 type FiniteFieldEC struct {
-	ec EllipticCurve // Coefficients of the curve equation.
-	p  *big.Int      // Prime modulus of the field.
+	ec EllipticCurve
+	p  *big.Int
 }
 
-// NewEllipticCurve creates a new EllipticCurve with given coefficients.
+// NewEllipticCurve creates a new elliptic curve
 func NewEllipticCurve(a, b *big.Int) *EllipticCurve {
-	return &EllipticCurve{
-		a: a,
-		b: b,
-	}
+	return &EllipticCurve{a: a, b: b}
 }
 
-// NewFiniteFieldEC creates a new EllipticCurve, defined over a finite field, with given coefficients and modulus.
+// NewFiniteFieldEC creates a new finite field elliptic curve
 func NewFiniteFieldEC(a, b, p *big.Int) *FiniteFieldEC {
-	return &FiniteFieldEC{
-		ec: *NewEllipticCurve(
-			new(big.Int).Mod(a, p),
-			new(big.Int).Mod(b, p),
-		),
-		p: p,
-	}
+	modA, modB := poolInt.Get().(*big.Int), poolInt.Get().(*big.Int)
+	defer poolInt.Put(modA)
+	defer poolInt.Put(modB)
+	modA.Mod(a, p)
+	modB.Mod(b, p)
+	return &FiniteFieldEC{ec: *NewEllipticCurve(modA, modB), p: p}
 }
 
 // GetDetails returns the coefficients A and B of the curve.
@@ -95,160 +73,29 @@ func (ffec *FiniteFieldEC) GetDetailsAsRats() (*big.Rat, *big.Rat, *big.Rat) {
 	return new(big.Rat).SetInt(ffec.ec.a), new(big.Rat).SetInt(ffec.ec.b), new(big.Rat).SetInt(ffec.p)
 }
 
-// solveCubic - form x^3 + Ax + B
-// Lists x value of the roots of the cubic equation
-// Returned roots are in order from min x to max x
+// SolveCubic finds roots of the cubic equation
 func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
-	logger := utils.InitialiseLogger("[SolveCubic]")
-	var roots []*big.Rat
+	A, B := ec.a, ec.b
+	discriminant := calcDiscriminant(A, B)
 
-	A, B := ec.GetDetails()
-
-	// Discriminant
-	// 4a^3 + 27b^2
-	aCubed := new(big.Int).Mul(A, new(big.Int).Mul(A, A))
-	bSquared := new(big.Int).Mul(B, B)
-	fourACubed := new(big.Int).Mul(new(big.Int).SetInt64(4), aCubed)
-	twentySevenBCubed := new(big.Int).Mul(new(big.Int).SetInt64(27), bSquared)
-	discriminant := new(big.Int).Add(fourACubed, twentySevenBCubed)
-
-	logger.Debugf("Discriminant: %s", discriminant.String())
-
-	// Find one root using newtonCubic
+	roots := make([]*big.Rat, 0, 3)
 	root1, err := newtonCubic(A, B)
 	if err != nil {
-		utils.LogOnError(logger, err, "SolveCubic/newtonCubic", false)
 		return nil, err
 	}
-	roots = []*big.Rat{
-		root1,
-	}
-
-	logger.Debugf("First root: %s", approximateRat(root1).FloatString(400))
+	roots = append(roots, root1)
 
 	if discriminant.Sign() == 0 {
-		// must have a double root
-		// see if root1 is double
-		xSquared := new(big.Rat).Mul(root1, root1)
-		threeXSquared := new(big.Rat).Mul(threeRat, xSquared)
-		gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(A))
-
-		logger.Debugf("Gradient: %s", gradient.FloatString(400))
-		logger.Debugf("Sign: %d", gradient.Sign())
-
-		if approximateRat(gradient).Sign() == 0 {
-			// root1 IS a double
-			// root2 == root1, AND root3 == - 2 * root1
-			root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
-			if root1.Cmp(root3) < 1 {
-				// root1 < root3
-				roots = []*big.Rat{
-					root1,
-					root1,
-					root3,
-				}
-			} else {
-				// root1 >= root3 (NB: if root1 == root3 the order doesn't matter)
-				roots = []*big.Rat{
-					root3,
-					root1,
-					root1,
-				}
-			}
-		} else {
-			// root2 == root3 == - root1 / 2
-			root2 := new(big.Rat).Neg(new(big.Rat).Quo(root1, twoRat))
-			if root1.Cmp(root2) < 1 {
-				// root1 < root2
-				roots = []*big.Rat{
-					root1,
-					root2,
-					root2,
-				}
-			} else {
-				// root1 >= root2 (NB: if root1 == root2 the order doesn't matter)
-				roots = []*big.Rat{
-					root2,
-					root2,
-					root1,
-				}
-			}
-		}
-	}
-
-	if discriminant.Sign() < 0 {
-		// must have 3 distinct roots
-		// Find the remaining two roots
-		remainingRoots, err := findRemainingRoots(new(big.Rat).SetInt(A), root1)
+		roots = handleDoubleRoot(A, root1)
+	} else if discriminant.Sign() < 0 {
+		remainingRoots, err := findRemainingRoots(poolRat.Get().(*big.Rat).SetInt(A), root1)
 		if err != nil {
-			utils.LogOnError(logger, err, "SolveCubic/findRemainingRoots", false)
 			return nil, err
 		}
-
-		logger.Debugf("Remianing roots: 1) %s, 2) %s", remainingRoots[0].FloatString(10), remainingRoots[1].FloatString(10))
-		for i, root := range remainingRoots {
-			remainingRoots[i] = approximateRat(root)
-		}
-
-		if remainingRoots[0].Cmp(root1) < 0 {
-			// remainingRoots[0] < root1
-			if remainingRoots[1].Cmp(remainingRoots[0]) < 0 {
-				// remainingRoots[1] < remainingRoots[0] (remainingRoots[0] < root1)
-				roots = []*big.Rat{
-					remainingRoots[1],
-					remainingRoots[0],
-					root1,
-				}
-			} else {
-				// remainingRoots[0] <= remainingRoots[1] (remainingRoots[0] < root1)
-				if remainingRoots[1].Cmp(root1) < 0 {
-					// remainingRoots[1] < root1 (remainingRoots[0] <= remainingRoots[1]) (remainingRoots[0] < root1)
-					roots = []*big.Rat{
-						remainingRoots[0],
-						remainingRoots[1],
-						root1,
-					}
-				} else {
-					// root1 <= remainingRoots[1] (remainingRoots[0] <= remainingRoots[1]) (remainingRoots[0] < root1)
-					roots = []*big.Rat{
-						remainingRoots[0],
-						root1,
-						remainingRoots[1],
-					}
-				}
-			}
-		} else {
-			// root1 <= remainingRoots[0]
-			if remainingRoots[1].Cmp(remainingRoots[0]) < 0 {
-				// remainingRoots[1] < remainingRoots[0] (root1 <= remainingRoots[0])
-				if remainingRoots[1].Cmp(root1) < 0 {
-					// remainingRoots[1] < root1 (root1 <= remainingRoots[0]) (remainingRoots[1] < remainingRoots[0])
-					roots = []*big.Rat{
-						remainingRoots[1],
-						root1,
-						remainingRoots[0],
-					}
-				} else {
-					// root1 <= remainingRoots[1] (root1 <= remainingRoots[0]) (remainingRoots[1] < remainingRoots[0])
-					roots = []*big.Rat{
-						remainingRoots[0],
-						root1,
-						remainingRoots[1],
-					}
-				}
-			} else {
-				// remainingRoots[0] <= remainingRoots[1] (root1 <= remainingRoots[0])
-				roots = []*big.Rat{
-					root1,
-					remainingRoots[0],
-					remainingRoots[1],
-				}
-			}
-		}
+		roots = append(roots, remainingRoots...)
 	}
 
-	// returned roots are in order from min x to max x
-	return roots, nil
+	return sortRoots(roots), nil
 }
 
 func (ffec FiniteFieldEC) SolveCubic(xWindowShift *big.Int) ([]*big.Rat, error) {
@@ -301,6 +148,52 @@ func (ffec FiniteFieldEC) FindY(x *big.Rat) (*big.Rat, error) {
 		return nil, err
 	}
 	return modRatInt(result, ffec.p), nil
+}
+
+// Utility functions
+func calcDiscriminant(A, B *big.Int) *big.Int {
+	aCubed := poolInt.Get().(*big.Int).Mul(A, poolInt.Get().(*big.Int).Mul(A, A))
+	bSquared := poolInt.Get().(*big.Int).Mul(B, B)
+	defer poolInt.Put(aCubed)
+	defer poolInt.Put(bSquared)
+	return aCubed.Add(aCubed.Mul(aCubed, big.NewInt(4)), bSquared.Mul(bSquared, big.NewInt(27)))
+}
+
+func handleDoubleRoot(A *big.Int, root1 *big.Rat) []*big.Rat {
+	gradient := poolRat.Get().(*big.Rat).Mul(threeRat, poolRat.Get().(*big.Rat).Mul(root1, root1))
+	gradient.Add(gradient, poolRat.Get().(*big.Rat).SetInt(A))
+	defer poolRat.Put(gradient)
+	if gradient.Sign() == 0 {
+		root3 := poolRat.Get().(*big.Rat).Neg(poolRat.Get().(*big.Rat).Mul(root1, twoRat))
+		defer poolRat.Put(root3)
+		return []*big.Rat{root1, root1, root3}
+	}
+	root2 := poolRat.Get().(*big.Rat).Neg(poolRat.Get().(*big.Rat).Quo(root1, twoRat))
+	defer poolRat.Put(root2)
+	return []*big.Rat{root1, root2, root2}
+}
+
+func sortRoots(roots []*big.Rat) []*big.Rat {
+	// If there's only one root, no sorting is needed
+	if len(roots) <= 1 {
+		return roots
+	}
+
+	// Simple insertion sort for up to 3 elements
+	for i := 1; i < len(roots); i++ {
+		key := roots[i]
+		j := i - 1
+
+		// Move elements of roots[0..i-1] that are greater than key
+		// to one position ahead of their current position
+		for j >= 0 && roots[j].Cmp(key) > 0 {
+			roots[j+1] = roots[j]
+			j--
+		}
+		roots[j+1] = key
+	}
+
+	return roots
 }
 
 // modRatInt computes `a mod b` where `a` is a big.Rat and `b` is a big.Int.

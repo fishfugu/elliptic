@@ -207,7 +207,7 @@ func LogPoints(points [][2]*big.Int) {
 }
 
 // VisualisePoints displays the points on a 2D text-based plane, including axes, reflection line, and scale indicators.
-// TODO: turn this into something that accepts and uses a bigarith not an int
+// TODO: turn this into something that accepts and uses a big.math not an int
 func VisualisePoints(points [][2]*big.Int, p int) string {
 	plane := make([][]rune, p+1)       // +1 to include the x-axis
 	tickInterval := utils.Max(1, p/10) // Adjust the interval based on p, avoiding too many ticks
@@ -267,4 +267,16 @@ func VisualisePoints(points [][2]*big.Int, p int) string {
 	}
 
 	return result
+}
+
+func Div2RoundUp(p *big.Int) *big.Int {
+	two := big.NewInt(2)
+	remainder := new(big.Int).Mod(p, two)
+	result := new(big.Int).Set(p)
+
+	if remainder.Sign() != 0 { // p is odd
+		result.Add(result, big.NewInt(1)) // Increment to make it even
+	}
+
+	return result.Div(result, two) // Divide by 2
 }
