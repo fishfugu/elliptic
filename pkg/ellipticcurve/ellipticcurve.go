@@ -7,72 +7,43 @@ import (
 	"elliptic/pkg/utils"
 )
 
-var (
-	oneInt, twoInt, fourInt   *big.Int
-	twoRat, threeRat, fourRat *big.Rat
-	toleranceFractionRat      *big.Rat
-	halfFloat                 *big.Float
+// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
+// used for. keys in EC Cryptography in the highest security situations:
+// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
+// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
+// the highest security assurances."
 
-	// name these after their values - to avoid needing to go check values while reading
-	// update name of variable if changing value
-	// NB: on one hand, want same value used all the time (not set separately)
-	// on the other - want readability
-	tolerance_1024 uint64
-	precision_2048 uint
+var (
+	oneInt, twoInt, fourInt                       = big.NewInt(1), big.NewInt(2), big.NewInt(4)
+	zeroRat, twoRat, threeRat, fourRat            = big.NewRat(0, 1), big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
+	precision_2048                     uint       = 2048
+	tolerance_1024                     uint64     = 1024
+	toleranceInt                                  = big.NewInt(int64(tolerance_1024))
+	twoToThePowerOfTolerance                      = new(big.Int).Exp(twoInt, toleranceInt, nil)
+	toleranceFractionRat               *big.Rat   = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTolerance)
+	halfFloat                          *big.Float = utils.NewFloat().SetFloat64(0.5)
 )
 
-func init() {
-	oneInt, twoInt, fourInt = big.NewInt(1), big.NewInt(2), big.NewInt(4)
-	twoRat, threeRat, fourRat = big.NewRat(2, 1), big.NewRat(3, 1), big.NewRat(4, 1)
-
-	// 2048 bit precision was chosen as approximately 4 times the MAXIMUM number of bits
-	// used for. keys in EC Cryptography in the highest security situations:
-	// https://en.wikipedia.org/wiki/Key_size?utm_source=chatgpt.com
-	// "521-bit keys: Deliver a security level of roughly 256 bits, used in scenarios requiring
-	// the highest security assurances."
-	precision_2048, tolerance_1024 = 2048, 1024
-
-	// Tolerance for approximation
-	tolleranceInt := big.NewInt(int64(tolerance_1024))
-	twoToThePowerOfTollerance := new(big.Int).Exp(twoInt, tolleranceInt, nil)
-	toleranceFractionRat = new(big.Rat).SetFrac(oneInt, twoToThePowerOfTollerance)
-
-	// Commonly used float
-	halfFloat = utils.NewFloat().SetFloat64(0.5)
-}
-
-// NOTE: these are private / immutable on purpose
-// All ECs defined in the Weierstrass form
-
 // EllipticCurve represents an elliptic curve defined by the equation y^2 = x^3 + Ax + B
-// where A and B are both integers represented *big.Int objects
 type EllipticCurve struct {
-	a, b *big.Int // Coefficients of the curve equation.
+	a, b *big.Int
 }
 
-// FiniteFieldEC represents an elliptic curve over a finite field defined by the equation y^2 = x^3 + Ax + B.
+// FiniteFieldEC represents an elliptic curve over a finite field
 type FiniteFieldEC struct {
-	ec EllipticCurve // Coefficients of the curve equation.
-	p  *big.Int      // Prime modulus of the field.
+	ec *EllipticCurve
+	p  *big.Int
 }
 
-// NewEllipticCurve creates a new EllipticCurve with given coefficients.
+// NewEllipticCurve creates a new elliptic curve
 func NewEllipticCurve(a, b *big.Int) *EllipticCurve {
-	return &EllipticCurve{
-		a: a,
-		b: b,
-	}
+	return &EllipticCurve{a: a, b: b}
 }
 
-// NewFiniteFieldEC creates a new EllipticCurve, defined over a finite field, with given coefficients and modulus.
+// NewFiniteFieldEC creates a new finite field elliptic curve
 func NewFiniteFieldEC(a, b, p *big.Int) *FiniteFieldEC {
-	return &FiniteFieldEC{
-		ec: *NewEllipticCurve(
-			new(big.Int).Mod(a, p),
-			new(big.Int).Mod(b, p),
-		),
-		p: p,
-	}
+	modA, modB := new(big.Int).Mod(a, p), new(big.Int).Mod(b, p)
+	return &FiniteFieldEC{ec: NewEllipticCurve(modA, modB), p: p}
 }
 
 // GetDetails returns the coefficients A and B of the curve.
@@ -90,87 +61,82 @@ func (ffec *FiniteFieldEC) GetDetails() (*big.Int, *big.Int, *big.Int) {
 	return ffec.ec.a, ffec.ec.b, ffec.p
 }
 
+// GetEC returns the Elliptic Curve object of the finite field curve.
+func (ffec *FiniteFieldEC) GetEC() *EllipticCurve {
+	return ffec.ec
+}
+
 // GetDetailsAsRats returns the coefficients A, B, and the modulus P of the finite field curve, as big.Rat values.
 func (ffec *FiniteFieldEC) GetDetailsAsRats() (*big.Rat, *big.Rat, *big.Rat) {
 	return new(big.Rat).SetInt(ffec.ec.a), new(big.Rat).SetInt(ffec.ec.b), new(big.Rat).SetInt(ffec.p)
 }
 
-// solveCubic - form x^3 + Ax + B
+// SolveCubic finds roots of the cubic equation
 func (ec EllipticCurve) SolveCubic() ([]*big.Rat, error) {
-	logger := utils.InitialiseLogger("[SolveCubic]")
-	var roots []*big.Rat
+	logger := utils.InitialiseLogger("[EllipticCurve/SolveCubic]")
+	logger.Debug("starting function EllipticCurve/SolveCubic")
 
-	A, B := ec.GetDetails()
+	A, B := new(big.Int).Set(ec.a), new(big.Int).Set(ec.b)    // amke sure these don't get edited while working with them
+	logger.Debugf("1 EllipticCurve A: %s, B: %s", A, B)       // for text output to screen
+	logger.Debugf("2 EllipticCurve A: %s, B: %s", ec.a, ec.b) // for text output to screen
+	discriminant := calcDiscriminant(A, B)
 
-	// Discriminant
-	// 4a^3 + 27b^2
-	aCubed := new(big.Int).Mul(A, new(big.Int).Mul(A, A))
-	bSquared := new(big.Int).Mul(B, B)
-	fourACubed := new(big.Int).Mul(new(big.Int).SetInt64(4), aCubed)
-	twentySevenBCubed := new(big.Int).Mul(new(big.Int).SetInt64(27), bSquared)
-	discriminant := new(big.Int).Add(fourACubed, twentySevenBCubed)
+	logger.Debugf("3 EllipticCurve A: %s, B: %s", A, B)       // for text output to screen
+	logger.Debugf("4 EllipticCurve A: %s, B: %s", ec.a, ec.b) // for text output to screen
 
-	logger.Debugf("Discriminant: %s", discriminant.String())
-
-	// Find one root using newtonCubic
+	roots := make([]*big.Rat, 0, 3)
 	root1, err := newtonCubic(A, B)
 	if err != nil {
-		utils.LogOnError(logger, err, "SolveCubic/newtonCubic", false)
 		return nil, err
 	}
-	roots = append(roots, approximateRat(root1))
-
-	logger.Debugf("First root: %s", approximateRat(root1).FloatString(400))
+	roots = append(roots, root1)
 
 	if discriminant.Sign() == 0 {
-		// must have a double root
-		// see if root1 is double
-		xSquared := new(big.Rat).Mul(root1, root1)
-		threeXSquared := new(big.Rat).Mul(threeRat, xSquared)
-		gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(A))
-
-		logger.Debugf("Gradient: %s", gradient.FloatString(400))
-		logger.Debugf("Sign: %d", gradient.Sign())
-
-		if approximateRat(gradient).Sign() == 0 {
-			// root2 == root1 - AND root3 == - 2 * root1
-			roots = append(roots, approximateRat(root1))
-			root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
-			roots = append(roots, approximateRat(root3))
-		} else {
-			// root2 == root3 == - root1 / 2
-			root2 := new(big.Rat).Neg(new(big.Rat).Quo(root1, twoRat))
-			roots = append(roots, approximateRat(root2))
-			roots = append(roots, approximateRat(root2))
-		}
-	}
-
-	if discriminant.Sign() < 0 {
-		// must have 3 distinct roots
-		// Find the remaining two roots
+		roots = handleDoubleRoot(A, root1)
+	} else if discriminant.Sign() < 0 {
 		remainingRoots, err := findRemainingRoots(new(big.Rat).SetInt(A), root1)
 		if err != nil {
-			utils.LogOnError(logger, err, "SolveCubic/findRemainingRoots", false)
 			return nil, err
-		}
-
-		logger.Debugf("Remianing roots: 1) %s, 2) %s", remainingRoots[0].FloatString(10), remainingRoots[1].FloatString(10))
-		for i, root := range remainingRoots {
-			remainingRoots[i] = approximateRat(root)
 		}
 		roots = append(roots, remainingRoots...)
 	}
 
-	return roots, nil
+	return sortRoots(roots), nil
 }
 
-func (ffec FiniteFieldEC) SolveCubic() ([]*big.Rat, error) {
-	results, err := ffec.ec.SolveCubic()
+func (ffec FiniteFieldEC) SolveCubic(xWindowShift *big.Int) ([]*big.Rat, error) {
+	logger := utils.InitialiseLogger("[FiniteFieldEC/SolveCubic]")
+	logger.Debug("starting function FiniteFieldEC/SolveCubic")
+
+	_, _, p := ffec.GetDetails()
+	pRat := new(big.Rat).SetInt(p)
+
+	logger.Debugf("1 FiniteFieldEC A: %s, B: %s, P: %s", ffec.ec.a, ffec.ec.b, p) // for text output to screen
+
+	roots, err := ffec.ec.SolveCubic()
+	logger.Debugf("2 FiniteFieldEC A: %s, B: %s, P: %s", ffec.ec.a, ffec.ec.b, p) // for text output to screen
 	// convert each value into its mod p equivalent
-	for i, result := range results {
-		results[i] = modRatInt(result, ffec.p)
+	for i, result := range roots {
+		roots[i] = modRatInt(result, p)
 	}
-	return results, err
+
+	// if xWindowShift exists and is not 0
+	// shift all the x-values for the points
+	// by enough to put thwm in the right window
+	if (xWindowShift != nil) && (xWindowShift.Sign() != 0) {
+		minXWindow := new(big.Rat).Add(zeroRat, new(big.Rat).SetInt(xWindowShift))
+		maxXWindow := new(big.Rat).Add(pRat, new(big.Rat).SetInt(xWindowShift))
+		for _, root := range roots {
+			for root.Cmp(minXWindow) < 0 {
+				root.Add(root, pRat)
+			}
+			for root.Cmp(maxXWindow) >= 0 {
+				root.Sub(root, pRat)
+			}
+		}
+	}
+
+	return roots, err
 }
 
 // FindY finds the y value - an EllipticCurve - x^3 + Ax + B
@@ -197,6 +163,48 @@ func (ffec FiniteFieldEC) FindY(x *big.Rat) (*big.Rat, error) {
 	return modRatInt(result, ffec.p), nil
 }
 
+// Utility functions
+func calcDiscriminant(A, B *big.Int) *big.Int {
+	aCubed := new(big.Int).Mul(A, new(big.Int).Mul(A, A))
+	bSquared := new(big.Int).Mul(B, B)
+
+	return new(big.Int).Add(new(big.Int).Mul(aCubed, big.NewInt(4)), new(big.Int).Mul(bSquared, big.NewInt(27)))
+}
+
+func handleDoubleRoot(A *big.Int, root1 *big.Rat) []*big.Rat {
+	gradient := new(big.Rat).Mul(threeRat, new(big.Rat).Mul(root1, root1))
+	gradient.Add(gradient, new(big.Rat).SetInt(A))
+	if gradient.Sign() == 0 {
+		root3 := new(big.Rat).Neg(new(big.Rat).Mul(root1, twoRat))
+		return []*big.Rat{root1, root1, root3}
+	}
+	root2 := new(big.Rat).Neg(new(big.Rat).Quo(root1, twoRat))
+	return []*big.Rat{root1, root2, root2}
+}
+
+func sortRoots(roots []*big.Rat) []*big.Rat {
+	// If there's only one root, no sorting is needed
+	if len(roots) <= 1 {
+		return roots
+	}
+
+	// Simple insertion sort for up to 3 elements
+	for i := 1; i < len(roots); i++ {
+		key := roots[i]
+		j := i - 1
+
+		// Move elements of roots[0..i-1] that are greater than key
+		// to one position ahead of their current position
+		for j >= 0 && roots[j].Cmp(key) > 0 {
+			roots[j+1] = roots[j]
+			j--
+		}
+		roots[j+1] = key
+	}
+
+	return roots
+}
+
 // modRatInt computes `a mod b` where `a` is a big.Rat and `b` is a big.Int.
 // The result is a big.Rat such that 0 <= result < b (converted to a big.Rat).
 func modRatInt(a *big.Rat, b *big.Int) *big.Rat {
@@ -217,7 +225,7 @@ func sqrtRat(input *big.Rat) (*big.Rat, error) {
 	num, den := input.Num(), input.Denom()
 
 	// Check if numerator and denominator are perfect squares
-	if sqrtNum, sqrtDen := intSqrt(num), intSqrt(den); sqrtNum != nil && sqrtDen != nil {
+	if sqrtNum, sqrtDen := utils.IntSqrt(num), utils.IntSqrt(den); sqrtNum != nil && sqrtDen != nil {
 		return new(big.Rat).SetFrac(sqrtNum, sqrtDen), nil
 	}
 
@@ -246,39 +254,6 @@ func sqrtFloat(a *big.Float, prec uint) *big.Float {
 	}
 
 	return guess
-}
-
-// intSqrt computes the integer square root of a big.Int if it is a perfect square.
-// Otherwise, it returns nil.
-func intSqrt(x *big.Int) *big.Int {
-	logger := utils.InitialiseLogger("[intSqrt]")
-	logger.Debug("starting function intSqrt")
-
-	// Use binary search to find the integer square root
-	low := big.NewInt(0)
-	high := new(big.Int).Set(x)
-	mid := new(big.Int)
-	square := new(big.Int)
-
-	for low.Cmp(high) <= 0 {
-		logger.Debug(fmt.Sprintf("Low: %s, High: %s", low.String(), high.String()))
-		mid = new(big.Int).Rsh(new(big.Int).Add(low, high), 1) // mid = (low + high) / 2
-		logger.Debug(fmt.Sprintf("Mid: %s:", mid.String()))
-		square = new(big.Int).Mul(mid, mid) // square = mid^2
-
-		cmp := square.Cmp(x)
-		logger.Debug(fmt.Sprintf("X: %s, Square: %s", x.String(), square.String()))
-
-		if cmp == 0 {
-			return mid // Perfect square
-		} else if cmp < 0 {
-			low.Add(mid, big.NewInt(1))
-		} else {
-			high.Sub(mid, big.NewInt(1))
-		}
-	}
-
-	return nil // Not a perfect square
 }
 
 // QuickEstimateRoot estimates a root of the cubic equation x^3 + Ax + B = 0
@@ -435,4 +410,27 @@ func bestRationalApproximation(input *big.Rat) *big.Rat {
 
 	// If no better approximation is found, return the input itself
 	return input
+}
+
+// FindY finds the y value - an EllipticCurve - x^3 + Ax + B - in the Reals
+// it returns the positive y value - but the other value is simply the negative of that anyway
+func FindYOnReals(ec *EllipticCurve, x *big.Int, finiteFieldY *big.Int) (*big.Rat, error) {
+	logger := utils.InitialiseLogger("[FindYOnReals]")
+	logger.Debug("starting function FindYOnReals")
+
+	A, B := ec.GetDetails()
+	Ax := new(big.Int).Mul(A, x)
+	xSquared := new(big.Int).Mul(x, x)
+	xCubed := new(big.Int).Mul(xSquared, x)
+	xCubedPlusAx := new(big.Int).Add(xCubed, Ax)
+	xCubedPlusAxPlusB := new(big.Int).Add(xCubedPlusAx, B)
+	sqrtXCubedPlusAxPlusB, err := sqrtRat(new(big.Rat).SetInt(xCubedPlusAxPlusB))
+	if err != nil {
+		return nil, err
+	}
+	if finiteFieldY.Sign() < 0 {
+		sqrtXCubedPlusAxPlusB.Neg(sqrtXCubedPlusAxPlusB)
+	}
+
+	return sqrtXCubedPlusAxPlusB, nil
 }
