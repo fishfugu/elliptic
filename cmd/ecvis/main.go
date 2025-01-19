@@ -61,10 +61,10 @@ func run(logger *logrus.Logger) error {
 	}
 
 	// calculate points on the curve
-	points, err := finiteintfield.CalculatePoints(*curve, big.NewInt(-6), big.NewInt(-6)) // shift down by p/2 (rounded)
+	points, realPoints, err := finiteintfield.CalculatePoints(curve, big.NewInt(-6), big.NewInt(-6)) // shift down by p/2 (rounded)
 	if err != nil {
 		myWindow.SetContent(canvas.NewText("Error calculating points: "+err.Error(), color.White))
-		return nil
+		return err
 	}
 
 	// constants for canvas dimensions
@@ -85,16 +85,17 @@ func run(logger *logrus.Logger) error {
 	pointDetails := ""
 	numZeros := big.NewInt(0)
 	for _, point := range points {
-		x := new(big.Rat).SetInt(point[0])
-		y := new(big.Rat).SetInt(point[1])
-		logger.Debugf("x: %s, y: %s", x, y)
+		// add text description of point
+		pointDetails += fmt.Sprintf("(%v, %v), ", point[0], point[1])
 
-		// count zeros
-		if y.Sign() == 0 {
+		// count zeros (when y is 0)
+		if point[1].Sign() == 0 {
 			numZeros.Add(numZeros, oneInt)
 		}
 
-		pointDetails += fmt.Sprintf("(%v, %v), ", x, y)
+		// convert to big.Rat for later calcaultion
+		x := new(big.Rat).SetInt(point[0])
+		y := new(big.Rat).SetInt(point[1])
 
 		// Convert x, y to canvas coordinates
 		xCanvas := new(big.Rat).Add(x, halfPRat)
@@ -118,9 +119,17 @@ func run(logger *logrus.Logger) error {
 		fynePoints = append(fynePoints, fynePoint)
 	}
 
-	logger.Warnf("roots[0]: %s, halfP: %s, graphStep: %s", roots[0].FloatString(10), halfPRat, graphStep)
-	logger.Warnf("roots: %+v", roots)
-	for x := new(big.Rat).SetFrac(minP, oneInt); x.Cmp(new(big.Rat).SetFrac(maxP, oneInt)) < 0; x.Add(x, graphStep) {
+	realPontDetails := ""
+	for _, realPoint := range realPoints {
+		x := new(big.Rat).Set(realPoint[0])
+		y := new(big.Rat).Set(realPoint[1])
+
+		// add text description of point
+		yFloat, _ := y.Float32()
+		realPontDetails += fmt.Sprintf("(%v, %f), ", x, yFloat)
+	}
+
+	for x := new(big.Rat).SetInt(minP); x.Cmp(new(big.Rat).SetFrac(maxP, oneInt)) < 0; x.Add(x, graphStep) {
 		axPlusB := new(big.Rat).Mul(aRat, x) // ax
 		axPlusB.Add(axPlusB, bRat)           // ax + b
 
@@ -165,14 +174,22 @@ func run(logger *logrus.Logger) error {
 		fynePoints = append(fynePoints, negFynePoint)
 	}
 
+	logger.Infof("roots: %+v", roots)
+
 	// create a label for displaying point details
 	pointLabel := widget.NewLabel(fmt.Sprintf(
-		"Graph Deatils: %s\nPoint Details: %s",
+		"Graph Deatils: %s\n\nPoint Details: %s\n\nReal Point Details: %s\n\n",
 		graphDetails,
 		pointDetails,
+		realPontDetails,
 	))
 	pointLabel.Wrapping = fyne.TextWrapWord
 
+	logger.Infof("graphDetails: %+v", graphDetails)
+	logger.Infof("pointDetails: %+v", pointDetails)
+	logger.Infof("realPontDetails: %+v", realPontDetails)
+
+	logger.Info("Creating Canvas")
 	// create axes for the canvas
 	xAxis := canvas.NewLine(color.Gray{Y: 123})
 	xAxis.StrokeWidth = 1
@@ -186,14 +203,18 @@ func run(logger *logrus.Logger) error {
 	yAxis.Position1 = fyne.NewPos((float32(p.Int64())/2)*scaleFloat, 0) // Vertical line
 	yAxis.Position2 = fyne.NewPos((float32(p.Int64())/2)*scaleFloat, graphSize)
 
+	logger.Info("Assembling content for layout")
 	// Assemble content with layout
 	content := container.NewHSplit(
 		container.NewVScroll(pointLabel),                                // Left: Point details
 		container.NewWithoutLayout(append(fynePoints, xAxis, yAxis)...), // Right: Visualisation
 	)
+	logger.Info("Setting Split Proportion")
 	content.Offset = 0.3 // Set split proportion
+	logger.Info("Setting Content")
 	myWindow.SetContent(content)
 
+	logger.Info("Setting window size")
 	// Set window size and display
 	myWindow.Resize(fyne.NewSize(graphSize+displayWidth, graphSize))
 
@@ -207,6 +228,7 @@ func run(logger *logrus.Logger) error {
 		})
 	}()
 
+	logger.Info("Running App")
 	myApp.Run()
 
 	return nil

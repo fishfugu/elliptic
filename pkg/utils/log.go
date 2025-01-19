@@ -13,7 +13,7 @@ func InitialiseLogger(prefix string) *logrus.Logger {
 		Out:       os.Stdout,
 		Formatter: new(logrus.TextFormatter),
 		Hooks:     make(logrus.LevelHooks),
-		Level:     logrus.WarnLevel,
+		Level:     logrus.InfoLevel,
 	}
 	return log
 }
