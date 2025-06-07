@@ -46,10 +46,10 @@ func run(logger *logrus.Logger) error {
 		fmt.Print(curveInfo)
 
 		// Initialise elliptic curve object
-		eCurve := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
+		ec := ellipticcurve.NewFiniteFieldEC(curve.a, curve.b, curve.p)
 
 		// Calculate points on the curve
-		points, _, err := finiteintfield.CalculatePoints(eCurve, nil, nil)
+		points, _, err := finiteintfield.CalculatePoints(ec)
 		if err != nil {
 			utils.LogOnError(logger, err, fmt.Sprintf("error from CalculatePoints: %v\n", err), true)
 			continue // Skip to the next curve on error

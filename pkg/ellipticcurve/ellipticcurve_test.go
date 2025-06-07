@@ -1,6 +1,7 @@
 package ellipticcurve
 
 import (
+	"elliptic/pkg/utils"
 	"fmt"
 	"math/big"
 	"testing"
@@ -92,7 +93,7 @@ func BenchmarkSolveCubicDetails(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				root1 := big.NewRat(4, 1) // Simulate root1
 				xSquared := new(big.Rat).Mul(root1, root1)
-				threeXSquared := new(big.Rat).Mul(threeRat, xSquared)
+				threeXSquared := new(big.Rat).Mul(utils.ThreeRat, xSquared)
 				gradient := new(big.Rat).Add(threeXSquared, new(big.Rat).SetInt(tc.A))
 				_ = approximateRat(gradient) // Simulate operations
 			}

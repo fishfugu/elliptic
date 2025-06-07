@@ -1,15 +1,28 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Run make run-ecvis",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "make",
-            "runtimeArgs": ["run-ecvis"],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run ECVis",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/ecvis",
+      "args": [],
+      "env": {
+        "GOOS": "darwin",
+        "GOARCH": "amd64"
+      },
+      "buildFlags": "",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build-ecvis"
+    },
+    {
+      "name": "Test Current File",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "env": {}
+    }
+  ]
 }

@@ -20,13 +20,18 @@ func init() {
 // while points on a finite field are usually reported:
 // (x, y): 0 <= x < p, 0 <= y < p
 // these points are returned in a window such that:
-// xWindowShift <= x < p + xWindowShift
-// yWindowShift <= y < p + yWindowShift
-func CalculatePoints(FFEC *ellipticcurve.FiniteFieldEC, xWindowShift, yWindowShift *big.Int) (points [][2]*big.Int, realPoints [][2]*big.Rat, err error) {
+// -p/2 <= x < p/2
+// -p/2 <= y < p/2
+// (where both -p/2 rounded towards 0, and p/2 rounded away from 0)
+// but the REAL points are returned in a window such that:
+// min(x, where y=0) <= x < p + min(x, where y=0)
+// -p/2 <= y < p/2
+// (where both -p/2 rounded towards 0, and p/2 rounded away from 0)
+func CalculatePoints(ffec *ellipticcurve.FiniteFieldEC) (points [][2]*big.Int, realPoints [][2]*big.Rat, err error) {
 	logger := utils.InitialiseLogger("[CalculatePoints]")
 	logger.Debug("starting function CalculatePoints")
 
-	A, B, p := FFEC.GetDetails()
+	A, B, p := ffec.GetDetails()
 	logger.Debugf("1 CalculatePoints A: %s, B: %s, p: %s", A, B, p)
 
 	// set up y^2 lookup
@@ -41,10 +46,11 @@ func CalculatePoints(FFEC *ellipticcurve.FiniteFieldEC, xWindowShift, yWindowShi
 	xCubed, Ax, xCubedPlusAx, xCubedPlusAxPlusB, rhs := new(big.Int), new(big.Int), new(big.Int), new(big.Int), new(big.Int)
 	logger.Debugf("p: %v, zeroInt.Cmp(p): %v, zeroInt: %v", p, zeroInt.Cmp(p), zeroInt)
 
-	minXWindow := new(big.Int).Add(zeroInt, xWindowShift)
-	maxXWindow := new(big.Int).Add(p, xWindowShift)
-	minYWindow := new(big.Int).Add(zeroInt, yWindowShift)
-	maxYWindow := new(big.Int).Add(p, yWindowShift)
+	xOffset := Div2RoundUp(new(big.Int).Neg(p))
+	yOffset := Div2RoundUp(new(big.Int).Neg(p))
+	yOffsetRat := new(big.Rat).SetInt(yOffset)
+	realMinX := ellipticcurve.LeftmostRoot(A, B, p)
+
 	for x := big.NewInt(0); x.Cmp(p) < 0; x.Add(x, oneInt) {
 		// Calculate rhs: x^3 + Ax + B
 		xCubed.Exp(x, threeInt, p)             // x^3 mod p
@@ -59,41 +65,28 @@ func CalculatePoints(FFEC *ellipticcurve.FiniteFieldEC, xWindowShift, yWindowShi
 		if yList, ok := ySquaredLookup[rhs.String()]; ok {
 			// yList contains list of y values for which y^2 = rhs exists
 			for _, y := range yList {
-				shiftedX := new(big.Int).Set(x)
-				// if xWindowShift exists and is not 0
-				// shift all the x-values for the points
-				// by enough to put them in the right window
-				if (xWindowShift != nil) && (xWindowShift.Sign() != 0) {
-					for shiftedX.Cmp(minXWindow) < 0 {
-						shiftedX.Add(shiftedX, p)
-					}
-					for shiftedX.Cmp(maxXWindow) >= 0 {
-						shiftedX.Sub(shiftedX, p)
-					}
-				}
+				shiftedPoint := WindowShift(
+					[2]*big.Int{new(big.Int).Set(x), new(big.Int).Set(y)},
+					xOffset,
+					yOffset,
+					p,
+				)
+				points = append(points, shiftedPoint)
 
-				shiftedY := new(big.Int).Set(y)
-				// if yWindowShift exists and is not 0
-				// shift all the y-values for the points
-				// by enough to put them in the right window
-				if (yWindowShift != nil) && (yWindowShift.Sign() != 0) {
-					for shiftedY.Cmp(minYWindow) < 0 {
-						shiftedY.Add(shiftedY, p)
-					}
-					for shiftedY.Cmp(maxYWindow) >= 0 {
-						shiftedY.Sub(shiftedY, p)
-					}
-				}
-
-				points = append(points, [2]*big.Int{shiftedX, shiftedY})
-
-				// Use original 0 <= x < p
-				// But use yWindowShift <= shiftedY < p + yWindowShift
-				realY, err := ellipticcurve.FindYOnReals(FFEC.GetEC(), new(big.Int).Set(x), new(big.Int).Set(shiftedY))
+				// Use min(x, where y=0) <= x < p + min(x, where y=0)
+				// But use yOffset <= shiftedY < p + yOffset
+				realY, err := ellipticcurve.FindYOnReals(ffec, new(big.Int).Set(x), shiftedPoint[1].Cmp(zeroInt) >= 0)
 				if err != nil {
 					return nil, nil, err
 				}
-				realPoints = append(realPoints, [2]*big.Rat{new(big.Rat).SetInt(x), realY})
+				realPoint := [2]*big.Rat{new(big.Rat).SetInt(x), realY}
+				shiftedRealPoint := ellipticcurve.WindowShiftReal(
+					realPoint,
+					realMinX,
+					yOffsetRat,
+					p,
+				)
+				realPoints = append(realPoints, [2]*big.Rat{shiftedRealPoint[0], realY})
 			}
 		}
 	}
@@ -179,7 +172,7 @@ func VisualisePoints(points [][2]*big.Int, p int) string {
 	plane[p][0] = '+'   // Origin at the bottom-left corner
 	plane[p/2][0] = '|' // Mark where the y = p/2 line intersects with the y-axis
 
-	// Plot the points
+	// plot the points
 	for _, point := range points {
 		x := new(big.Int).Set(point[0])
 		y := new(big.Int).Set(point[1])
@@ -187,22 +180,22 @@ func VisualisePoints(points [][2]*big.Int, p int) string {
 		plane[p-yInt][xInt] = '*'
 	}
 
-	// Construct the visual output
+	// construct the visual output
 	result := "\n2D Plane Visualisation with Cartesian Axes, Reflection Line, and Scale:\n"
 	for i, line := range plane {
 		for j, char := range line {
 			result += string(char) + " "
-			// Add scale numbers at the end of x-axis
+			// add scale numbers at the end of x-axis
 			if (i == p) && j == p {
 				result += " 0"
 			}
 
-			// Add scale numbers at the end of reflection lines
+			// add scale numbers at the end of reflection lines
 			if (i == p/2) && j == p {
 				result += fmt.Sprintf(" %d/2", p)
 			}
 		}
-		// Label on end of line for y-axis scale
+		// label on end of line for y-axis scale
 		if i%tickInterval == 0 && i != p {
 			result += fmt.Sprintf(" %d", p-i)
 		}
@@ -213,60 +206,39 @@ func VisualisePoints(points [][2]*big.Int, p int) string {
 }
 
 func Div2RoundUp(p *big.Int) *big.Int {
-	two := big.NewInt(2)
-	remainder := new(big.Int).Mod(p, two)
+	remainder := new(big.Int).Mod(p, twoInt)
 	result := new(big.Int).Set(p)
 
 	if remainder.Sign() != 0 { // p is odd
-		result.Add(result, big.NewInt(1)) // Increment to make it even
+		result.Add(result, big.NewInt(1)) // increment to make it even
 	}
 
-	return result.Div(result, two) // Divide by 2
+	return result.Div(result, twoInt) // divide by 2
 }
 
-// // isPerfectSquare checks if a number is a perfect square.
-// func isPerfectSquare(n *big.Int) bool {
-// 	if n.Sign() < 0 {
-// 		return false
-// 	}
-// 	sqrt := new(big.Int).Sqrt(n)
-// 	square := new(big.Int).Mul(sqrt, sqrt)
-// 	return square.Cmp(n) == 0
-// }
+func WindowShift(point [2]*big.Int, xOffset, yOffset, p *big.Int) [2]*big.Int {
+	minXWindow := new(big.Int).Add(zeroInt, xOffset)
+	maxXWindow := new(big.Int).Add(p, xOffset)
+	minYWindow := new(big.Int).Add(zeroInt, yOffset)
+	maxYWindow := new(big.Int).Add(p, yOffset)
 
-// func FindRealEquivalentPoint(A, B, p *big.Int, point [2]*big.Int) {
-// 	// Define the modular constraints for the point we are testing
-// 	mod := new(big.Int).Set(p)
-// 	xMod := new(big.Int).Set(point[0])
-// 	yMod := new(big.Int).Set(point[1])
-
-// 	// Create temporary big.Int instances for calculations
-// 	temp := new(big.Int)
-// 	x := new(big.Int).Set(xMod)
-// 	for k := big.NewInt(0); k.Cmp(big.NewInt(1000000)) < 0; k.Add(k, big.NewInt(1)) {
-// 		// if new(big.Int).Mod(k, big.NewInt(100000)).Cmp(big.NewInt(0)) == 0 {
-// 		// 	fmt.Printf("k: %s\n", k)
-// 		// }
-
-// 		// Compute x based on modular constraint: x = xMod + mod * k
-// 		// just add mod each loop
-// 		x := new(big.Int).Add(x, mod)
-
-// 		// Compute y^2 = x^3 + A*x + B
-// 		xCubed := new(big.Int).Exp(x, big.NewInt(3), nil)
-// 		Ax := new(big.Int).Mul(A, x)
-// 		ySquared := new(big.Int).Add(new(big.Int).Add(xCubed, Ax), B)
-
-// 		// Check if ySquared is a perfect square
-// 		if isPerfectSquare(ySquared) {
-// 			// Compute y
-// 			y := new(big.Int).Sqrt(ySquared)
-
-// 			// Check y modular constraint: y % mod == yMod
-// 			if temp.Mod(y, mod).Cmp(yMod) == 0 {
-// 				fmt.Printf("Smallest integer solution: x = %s, y = %s\n", x.String(), y.String())
-// 				return
-// 			}
-// 		}
-// 	}
-// }
+	shiftedX := new(big.Int).Set(point[0]) // x value
+	shiftedY := new(big.Int).Set(point[1]) // y value
+	if (xOffset != nil) && (xOffset.Sign() != 0) {
+		for shiftedX.Cmp(minXWindow) < 0 { // if shiftedX too low, increase it
+			shiftedX.Add(shiftedX, p)
+		}
+		for shiftedX.Cmp(maxXWindow) >= 0 { // if shiftedX too high, decrease it
+			shiftedX.Sub(shiftedX, p)
+		}
+	}
+	if (yOffset != nil) && (yOffset.Sign() != 0) {
+		for shiftedY.Cmp(minYWindow) < 0 { // if shiftedY too low, increase it
+			shiftedY.Add(shiftedY, p)
+		}
+		for shiftedY.Cmp(maxYWindow) >= 0 { // if shiftedY too high, decrease it
+			shiftedY.Sub(shiftedY, p)
+		}
+	}
+	return [2]*big.Int{shiftedX, shiftedY}
+}

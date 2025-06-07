@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-ecvis",
+      "type": "shell",
+      "command": "make",
+      "args": ["build-ecvis"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "Builds the ecvis binary using the Makefile."
+    }
+  ]
+}
